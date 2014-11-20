@@ -41,14 +41,19 @@ my $n_seqs = 0;
 my $n_unidentified = 0; # Unidentified organisms
 my $n_excluded = 0; # Excluded organisms
 my $regexp_excluded; # Regexp to exclude
+my $n_incomplete = 0; # Taxonomy incomplete: includes C or O or F or G and not P
+my $n_replaced = 0; # Taxonomy replaced from $incompletesfile
+my $n_redundant = 0; # Taxonomically redundantedundant organisms
 my $show = 0; # Show or hide ranks with value "no rank"
 my $o_qiime = 1; # produce taxon descriptions compatible with qiime
 my $o_first = 0; # if there are multiple taxon ids separated by ' ' or ';', take the first rather than failing
 my $o_retry = 1; # if there are multiple taxon ids separated by ' ' or ';', try them in turn rather than failing
 my $o_taxon = 1;
+my $o_no_redundant = 1; # do not produce entries with redundant taxonomy; choose the longest
 my $idformat = 'HUDS%0.4u.01FU_%s';  # field 1 is filled with $id1, field 2 is filled with accession
 my $id1 = 1;
 my $accessionfile;
+my $incompletesfile;
 my $outext = "";
 # Handle command-line options
 my $debug;
@@ -57,6 +62,9 @@ GetOptions( 's|show!' => sub { $show = 1; $outext = '.norank'},
             'q|qiime' => \$o_qiime,
             'noqiime' => sub { $o_qiime = 0 },
             'accessionfile=s' => \$accessionfile,
+            'incompletesfile=s' => \$incompletesfile,
+            'redundant' => sub { $o_no_redundant = 0 },
+            'noredundant' => \$o_no_redundant,
             'f|first' => \$o_first,
             'idformat' => \$idformat,
             'id1' => \$id1,
@@ -75,8 +83,17 @@ if ($o_qiime) {
     open(my $fh, "<", $accessionfile) or die "could not open $accessionfile: $!";
     while (<$fh>) {
         chomp;
-        my @l = split;
+        my @l = split /\t/;
         $ACCESSION{$l[0]} = $l[1];
+    }
+}
+my %INCOMPLETES;
+if ($incompletesfile) {
+    open(my $fh, "<", $incompletesfile) or die "could not open $incompletesfile $!";
+    while (<$fh>) {
+        chomp;
+        my @l = split /\t/;
+        $INCOMPLETES{$l[0]} = $l[1];
     }
 }
 
@@ -118,14 +135,22 @@ warn "Creating taxonomy hierarchy..\n" if $debug;
 my $outfile_seqs = "$filename\.taxonomy.fa";
 my $outfile_taxonomy = "$filename\.taxonomy";
 my $outfile_unidentified = "$filename\.unidentified";
+my $outfile_redundant = "$filename\.redundant";
 my $outfile_excluded = "$filename\.excluded";
+my $outfile_incompletes = "$filename\.incompletes";
 my $out = Bio::SeqIO->new(-format=> 'fasta',
 			              -file  => ">$outfile_seqs");
 open(TAXONOMY,">$outfile_taxonomy");
 open(UNIDENTIFIED,">$outfile_unidentified");
+open(INCOMPLETES,">$outfile_incompletes");
 print STDERR "sequences to    : $outfile_seqs\n";
 print STDERR "taxonomy to     : $outfile_taxonomy\n";
 print STDERR "unidentifieds to: $outfile_unidentified\n";
+print STDERR "incompletes to  : $outfile_incompletes\n";
+if ($o_no_redundant) {
+    open(REDUNDANT,">$outfile_redundant");
+    print STDERR "redundants to   : $outfile_redundant\n";
+}
 if ($regexp_excluded) {
     open(EXCLUDED,">$outfile_excluded");
     print STDERR "excluded to     : $outfile_excluded    when taxonomic hierarchy matches '$regexp_excluded'\n"
@@ -136,6 +161,7 @@ sub process_name($) {
     my $n = shift;
     return sprintf($idformat, $id1++, $ACCESSION{$n});
 }
+my %ENTRIES;
 my %RANKS = qw/ kingdom k__ phylum p__ class c__ order o__ family f__ genus g__ species s__ /;
 while (my $seq = $seqio->next_seq) { 
     printf STDERR "processing sequence $n_seqs\n" if (++$n_seqs % 500) == 0;
@@ -191,6 +217,7 @@ while (my $seq = $seqio->next_seq) {
         #print $name,";";
         #unshift(@hierarchy,$name);
 
+        my %rank_seen = map { $_ => 0 } keys %RANKS;
         # could also just check and see if $curr->rank is NULL?
         while($curr) {
             if (exists($RANKS{$curr->rank})) {
@@ -200,6 +227,7 @@ while (my $seq = $seqio->next_seq) {
                 my $name_no_rank = $name =~ /^</;
                 if (not $name_no_rank and $o_qiime) {
                     $name = $RANKS{$curr->rank} . $name;  # add [kpcofgs]__ prefix to rank
+                    $rank_seen{$curr->rank}++;
                     $name .= " taxonid_".$taxonid if $o_taxon and $taxonid and $curr->rank eq "species";
                 }
                 ## Default: hide "no rank"
@@ -217,8 +245,27 @@ while (my $seq = $seqio->next_seq) {
             print EXCLUDED "$ID\t$taxon_descriptors\t$hierarchy\n";
             next;
         }
-        #print "\n";
         my $final_name = process_name($display_name);
+        if (($incompletesfile or ! $rank_seen{phylum}) 
+            and ($rank_seen{phylum} or $rank_seen{class} or $rank_seen{order} or $rank_seen{family} or $rank_seen{genus})) {
+            # incomplete taxonomy, note it
+            if ($incompletesfile and $INCOMPLETES{$hierarchy}) {
+                ++$n_replaced;
+                my $new_hierarchy = $INCOMPLETES{$hierarchy};
+                print STDERR "$final_name: incomplete taxonomy '$hierarchy', complete taxonomy '$new_hierarchy'\n";
+                print INCOMPLETES "REPLACED\t$final_name\t$hierarchy\t$new_hierarchy\n";
+                $hierarchy = $new_hierarchy;
+            } else {
+                ++$n_incomplete;
+                print INCOMPLETES "INCOMPLETE\t$final_name\t$hierarchy\n";
+            }
+        }
+        if ($ENTRIES{$hierarchy}) {
+            print STDERR "HIERARCHY REDUNDANT:\T$final_name\t".$seq->length()."\t$hierarchy\n";
+            push @{$ENTRIES{$hierarchy}}, $seq;
+        } else {
+            $ENTRIES{$hierarchy} = [ $seq ];
+        }
         print TAXONOMY "$final_name\t$hierarchy\n";
         $seq->display_name($final_name);
         $seq->description($hierarchy.($o_qiime ? "" : "."));
@@ -229,14 +276,22 @@ while (my $seq = $seqio->next_seq) {
         print UNIDENTIFIED "$ID\t$taxon_descriptors\n";
     }
 }
-print STDERR "Total sequences seen                    : $n_seqs\n";
-print STDERR "Total sequences identified and included : ".($id1 - 1)."\n";
-print STDERR "Organisms not found in taxonomy database: $n_unidentified".($n_unidentified ? "    See '$outfile_unidentified'." : "")."\n";
+print STDERR "Total sequences seen                        : $n_seqs\n";
+print STDERR "Total sequences identified and included     : ".($id1 - 1)."\n";
+print STDERR "Organisms not found in taxonomy database    : $n_unidentified".($n_unidentified ? "    See '$outfile_unidentified'." : "")."\n";
+print STDERR "Sequences with incomplete taxonomy          : $n_incomplete\n";
+print STDERR "Sequences with taxonomy replaced from '$incompletesfile': $n_replaced\n" if $incompletesfile;
+close(UNIDENTIFIED);
+close(TAXONOMY);
+if ($o_no_redundant) {
+    print STDERR "Sequences removed as taxonomically redundant: $n_redundant".($n_redundant ? "    See '$outfile_redundant'." : "")."\n";
+    close(REDUNDANT);
+} else {
+    print STDERR "Taxonomically redundant sequences allowed.\n";
+}
 if ($regexp_excluded) {
     print STDERR "Organisms excluded by matching '$regexp_excluded': $n_excluded".($n_excluded ? "    See '$outfile_excluded'." : "")."\n";
+    close(EXCLUDED);
 } else {
     print STDERR "No --exclude option provided.\n";
 }
-
-close(UNIDENTIFIED);
-close(TAXONOMY);

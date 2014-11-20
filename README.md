@@ -17,7 +17,7 @@ qiime_get_blast_ids_for_genbank.pl seqs.bl6 > seqs.ids
 
 Fetch the GenBank sequences corresponding to these taxon IDs.  The `qiime_get_genbank_seqs.pl` script was originally the BioPerl script [`bp_download_query_genbank.pl`](https://github.com/bioperl/bioperl-live/blob/master/scripts/utilities/bp_download_query_genbank.pl), and the initial commit of the script to this repository was with a copy of that script so modifications can be tracked.
 
-The output of this script is two files, one of sequences to STDOUT and one of IDs and GenBank accession numbers  to STDERR.  Both are used in the next step.  The content of the accession number file should be the same as the `seq.ids` file, but the entries are likely to be in a different order that matches the order of sequences in the sequence file.
+The output of this script is two files, one of sequences to STDOUT and one of IDs and GenBank accession numbers  to STDERR.  Both are used in the next step.  The content of the accession number file should be the same as the `seqs.ids` file, but the entries are likely to be in a different order that matches the order of sequences in the sequence file.
 
 ```bash
 qiime_get_genbank_seqs.pl --gifile seqs.ids > gb_seqs.fa 2> gb_ids_acc.txt
