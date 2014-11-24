@@ -1,7 +1,7 @@
 Qiime-DB-enhance
 ================
 
-A small collection of scripts to ease the enhancement of a Qiime reference database.  BioPerl is required, as is a local copy of the NCBI taxonomy database (see below).  Two of these scripts started life written by others and are extensively modified here.
+A small collection of scripts to ease the enhancement of a Qiime reference database.  BioPerl is required, as is Gnu sort (on Macs, install `coreutils` using MacPorts and reference as `gsort`) and a local copy of the NCBI taxonomy database (see below).  Two of these scripts started life written by others and are extensively modified here.
 
 The workflow requires a few steps and is quite simple.  We start with a set of ITS sequences to blast, in Fasta format, say in `seqs.fa`.  We will have blast results returned in a table format that includes taxonomic information.
 
@@ -9,10 +9,10 @@ The workflow requires a few steps and is quite simple.  We start with a set of I
 blastn -db nt -query seqs.fa -outfmt "6 std staxids sscinames sskingdoms sblastnames" > seqs.bl6
 ```
 
-Run these blast results through a small filter to extract the gi, GenBank, and taxon IDs in a simple format.  The `qiime_get_blast_ids_for_genbank.pl` script depends upon the `-outfmt` string for the blast being as you see it above.
+Run these blast results through a small filter to extract the target gi ID, GenBank ID, taxon IDs, and start and end of the HSP in the target in a tab-delimited format.  The `qiime_get_blast_ids_for_genbank.pl` script depends upon the `-outfmt` string for the blast being as you see it above.
 
 ```bash
-qiime_get_blast_ids_for_genbank.pl seqs.bl6 > seqs.ids
+qiime_get_blast_ids_for_genbank.pl seqs.bl6 | sort -k1,2 -Vu > seqs.ids
 ```
 
 Fetch the GenBank sequences corresponding to these taxon IDs.  The `qiime_get_genbank_seqs.pl` script was originally the BioPerl script [`bp_download_query_genbank.pl`](https://github.com/bioperl/bioperl-live/blob/master/scripts/utilities/bp_download_query_genbank.pl), and the initial commit of the script to this repository was with a copy of that script so modifications can be tracked.
@@ -38,6 +38,8 @@ cd ..
 **Note**: This next step might challenge the memory capacity of desktop computers because of the reading of the taxonomic database.
 
 We then use this database to find full taxonomic information associated with the retrieved sequences and put that into a format useful for Qiime.  The `--exclude` is optional, and can contain any regular expression that would match taxonomic information for taxa to be excluded from the final results.
+
+Two options of note are `--min-to-truncate` (default 1000), which sets a minimum length (bp) of GenBank target sequence which will be subject to target truncation (shortening around the HSP), and `--min-after-truncate` (default 300), which is the minimum length of the truncation result, expanded equally up- and downstream of the HSP.  Target truncation shortens the sequence to just the region indicated by the start and end positions of the HSP returned by the Blast results above.  This can be very useful if the ITS hit is within a multi-Mbp length of genome sequence. 
 
 ```bash
 qiime_get_taxonomy_from_seqs.pl --exclude "uncultured fungus" --accessionfile gb_ids_acc.txt gb_seqs.fa

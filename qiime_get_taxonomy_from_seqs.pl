@@ -44,12 +44,16 @@ my $regexp_excluded; # Regexp to exclude
 my $n_incomplete = 0; # Taxonomy incomplete: includes C or O or F or G and not P
 my $n_replaced = 0; # Taxonomy replaced from $incompletesfile
 my $n_redundant = 0; # Taxonomically redundantedundant organisms
+my $n_truncated = 0; # number of sequences truncated for $seq->length > $o_min_to_truncate
+my $n_expanded_truncated = 0; # number of sequences not truncated when $seq->length > $o_min_to_truncate, because of $o_min_after_truncate
 my $show = 0; # Show or hide ranks with value "no rank"
 my $o_qiime = 1; # produce taxon descriptions compatible with qiime
 my $o_first = 0; # if there are multiple taxon ids separated by ' ' or ';', take the first rather than failing
 my $o_retry = 1; # if there are multiple taxon ids separated by ' ' or ';', try them in turn rather than failing
 my $o_taxon = 1;
 my $o_no_redundant = 1; # do not produce entries with redundant taxonomy; choose the longest
+my $o_min_to_truncate = 1000;  # if the GenBank sequence is longer than this, truncate it to the extent of the blast HSP
+my $o_min_after_truncate = 300;  # if the GenBank sequence would be shorter than this after truncation, expand it until it is this long
 my $idformat = 'HUDS%0.4u.01FU_%s';  # field 1 is filled with $id1, field 2 is filled with accession
 my $id1 = 1;
 my $accessionfile;
@@ -63,6 +67,8 @@ GetOptions( 's|show!' => sub { $show = 1; $outext = '.norank'},
             'noqiime' => sub { $o_qiime = 0 },
             'accessionfile=s' => \$accessionfile,
             'incompletesfile=s' => \$incompletesfile,
+            'min-to-truncate=i' => \$o_min_to_truncate,
+            'min-after-truncate=i' => \$o_min_after_truncate,
             'redundant' => sub { $o_no_redundant = 0 },
             'noredundant' => \$o_no_redundant,
             'f|first' => \$o_first,
@@ -78,13 +84,17 @@ GetOptions( 's|show!' => sub { $show = 1; $outext = '.norank'},
 die "must use --accessionfile to supply a file of IDs and accession numbers" if $o_qiime and not $accessionfile;
 die "must use --idformat to supply an ID format to use" if $o_qiime and not $idformat;
 die "only one of --first and --retry may be specified" if $o_first and $o_retry;
+die "--min-to-truncate must be ≥ 0" if $o_min_to_truncate < 0;
+die "does not make sense for --min-after-truncate to be > --min-to-truncate" if $o_min_after_truncate > $o_min_to_truncate;
 my %ACCESSION;
 if ($o_qiime) {
     open(my $fh, "<", $accessionfile) or die "could not open $accessionfile: $!";
     while (<$fh>) {
         chomp;
         my @l = split /\t/;
-        $ACCESSION{$l[0]} = $l[1];
+        $ACCESSION{$l[0]}{accession} = $l[1];
+        $ACCESSION{$l[0]}{start} = $l[2];
+        $ACCESSION{$l[0]}{end} = $l[3];
     }
 }
 my %INCOMPLETES;
@@ -138,6 +148,7 @@ my $outfile_unidentified = "$filename\.unidentified";
 my $outfile_redundant = "$filename\.redundant";
 my $outfile_excluded = "$filename\.excluded";
 my $outfile_incompletes = "$filename\.incompletes";
+my $outfile_truncated = "$filename\.truncated";
 my $out = Bio::SeqIO->new(-format=> 'fasta',
 			              -file  => ">$outfile_seqs");
 open(TAXONOMY,">$outfile_taxonomy");
@@ -147,29 +158,34 @@ print STDERR "sequences to    : $outfile_seqs\n";
 print STDERR "taxonomy to     : $outfile_taxonomy\n";
 print STDERR "unidentifieds to: $outfile_unidentified\n";
 print STDERR "incompletes to  : $outfile_incompletes\n";
-if ($o_no_redundant) {
-    open(REDUNDANT,">$outfile_redundant");
-    print STDERR "redundants to   : $outfile_redundant\n";
-}
-if ($regexp_excluded) {
-    open(EXCLUDED,">$outfile_excluded");
-    print STDERR "excluded to     : $outfile_excluded    when taxonomic hierarchy matches '$regexp_excluded'\n"
-}
+open(REDUNDANT,">$outfile_redundant") if $o_no_redundant;
+print STDERR "redundants to   : $outfile_redundant\n" if $o_no_redundant;
+open(EXCLUDED,">$outfile_excluded") if $regexp_excluded;
+print STDERR "excluded to     : $outfile_excluded    when taxonomic hierarchy matches '$regexp_excluded'\n" if $regexp_excluded;
+open(TRUNCATED,">$outfile_truncated") if $o_min_to_truncate;
+print STDERR "truncated to    : $outfile_truncated\n" if $o_min_to_truncate;
 # %RANKS keys are acceptable taxonomic ranks found in $curr->rank.  Target of each key is the
 # prefix assigned to that rank for the Qiime taxonomy list
 sub process_name($) {
     my $n = shift;
-    return sprintf($idformat, $id1++, $ACCESSION{$n});
+    return sprintf($idformat, $id1++, $ACCESSION{$n}->{accession});
+}
+sub get_hsp_extent($) {
+    my $n = shift;
+    my ($s, $e) = @{ $ACCESSION{$n} }{'start', 'end'};
+    #my $s = @ACCESSION{$n}->{start};
+    #my $e = @ACCESSION{$n}->{end};
+    ($s, $e) = ($e, $s) if $s > $e;  # swap if on reverse strand
+    return ($s, $e);
 }
 my %ENTRIES;
 my %RANKS = qw/ kingdom k__ phylum p__ class c__ order o__ family f__ genus g__ species s__ /;
 while (my $seq = $seqio->next_seq) { 
     printf STDERR "processing sequence $n_seqs\n" if (++$n_seqs % 500) == 0;
-    my $display_name = $seq->display_name;
-    #print $display_name,"\n";
+    #print $seq->display_name,"\n";
     ## GI/Accession number is the first item before the first underscore
     ## Organism name/Taxonomy ID is everything after the first underscore
-    my ($ID,@descriptors) = split(/\_/, $display_name);
+    my ($ID,@descriptors) = split(/\_/, $seq->display_name);
     my $org = join(" ",@descriptors);
     my $taxon_descriptors = $org;
     die "no taxonid found for id '$ID'" if ! @descriptors;
@@ -238,14 +254,18 @@ while (my $seq = $seqio->next_seq) {
             }
             $curr = $curr->ancestor;
         }
+
         my $hierarchy = join(";", @hierarchy);
+
         if ($regexp_excluded and $hierarchy =~ $regexp_excluded) {
             ++$n_excluded;
             print STDERR "excluding '$ID $input $hierarchy', matches '$regexp_excluded'\n";# if $debug;
             print EXCLUDED "$ID\t$taxon_descriptors\t$hierarchy\n";
             next;
         }
-        my $final_name = process_name($display_name);
+
+        my $final_name = process_name($seq->display_name);
+
         if (($incompletesfile or ! $rank_seen{phylum}) 
             and ($rank_seen{phylum} or $rank_seen{class} or $rank_seen{order} or $rank_seen{family} or $rank_seen{genus})) {
             # incomplete taxonomy, note it
@@ -260,38 +280,69 @@ while (my $seq = $seqio->next_seq) {
                 print INCOMPLETES "INCOMPLETE\t$final_name\t$hierarchy\n";
             }
         }
+
+        if ($o_min_to_truncate and $seq->length > $o_min_to_truncate) {
+            ++$n_truncated;
+            my $slen = $seq->length;
+            my ($hspstart, $hspend) = get_hsp_extent($seq->display_name);
+            my $hsplen = $hspend - $hspstart + 1;
+            my ($start, $end) = ($hspstart, $hspend);
+            my $d = $o_min_after_truncate - $hsplen;
+            my $status = "as_hsp";
+            if ($d > 0) {  # we are short of --min-after-truncate, expand the truncation site evenly both sides
+                ++$n_expanded_truncated;
+                $status = "expanded";
+                ++$d if $d % 2;  # make even for cleaner math
+                $start = ($start <= $d / 2) ? 1 : ($start - ($d / 2));
+                my $desired_end = $start + $o_min_after_truncate - 1;
+                $end = ($desired_end > $slen) ? $slen : $desired_end;
+            }
+            $seq->seq($seq->subseq($start, $end));
+            my $newlen = $seq->length;
+            print STDERR "Truncating ".$seq->display_name." from $slen to $newlen ($start-$end), HSP is $hsplen ($hspstart-$hspend)\t$status\n";
+            print TRUNCATED "TRUNCATED\t$final_name\t".$seq->display_name."\torig:$slen\thsp:$hsplen:$hspstart-$hspend\t$status\tnew:$newlen\tfrom:$start-$end\t$status\n";
+        }
+
         if ($ENTRIES{$hierarchy}) {
-            print STDERR "HIERARCHY REDUNDANT:\T$final_name\t".$seq->length()."\t$hierarchy\n";
+            print STDERR "HIERARCHY_REDUNDANT:\t$final_name\t".$seq->length."\t$hierarchy\n";
             push @{$ENTRIES{$hierarchy}}, $seq;
         } else {
             $ENTRIES{$hierarchy} = [ $seq ];
         }
+
         print TAXONOMY "$final_name\t$hierarchy\n";
+
         $seq->display_name($final_name);
         $seq->description($hierarchy.($o_qiime ? "" : "."));
         $out->write_seq($seq);      
+
     } else {
+
         ## Flag missing taxonomic ranks
         ++$n_unidentified;
         print UNIDENTIFIED "$ID\t$taxon_descriptors\n";
+
     }
+
 }
 print STDERR "Total sequences seen                        : $n_seqs\n";
 print STDERR "Total sequences identified and included     : ".($id1 - 1)."\n";
 print STDERR "Organisms not found in taxonomy database    : $n_unidentified".($n_unidentified ? "    See '$outfile_unidentified'." : "")."\n";
 print STDERR "Sequences with incomplete taxonomy          : $n_incomplete\n";
 print STDERR "Sequences with taxonomy replaced from '$incompletesfile': $n_replaced\n" if $incompletesfile;
-close(UNIDENTIFIED);
-close(TAXONOMY);
+if ($o_min_to_truncate) {
+    print STDERR "Sequences truncated when > $o_min_to_truncate bp: $n_truncated".($n_truncated ? "    See '$outfile_truncated'." : "")."\n";
+    print STDERR "Sequences expanded because < $o_min_after_truncate after truncation: $n_expanded_truncated\n";
+} else {
+    print STDERR "No --min-to-truncate value applied.\n";
+}
 if ($o_no_redundant) {
     print STDERR "Sequences removed as taxonomically redundant: $n_redundant".($n_redundant ? "    See '$outfile_redundant'." : "")."\n";
-    close(REDUNDANT);
 } else {
     print STDERR "Taxonomically redundant sequences allowed.\n";
 }
 if ($regexp_excluded) {
     print STDERR "Organisms excluded by matching '$regexp_excluded': $n_excluded".($n_excluded ? "    See '$outfile_excluded'." : "")."\n";
-    close(EXCLUDED);
 } else {
     print STDERR "No --exclude option provided.\n";
 }
