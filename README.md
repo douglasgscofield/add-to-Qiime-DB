@@ -99,9 +99,9 @@ The output of this script is in several files.  For a set of sequences called `g
 
 `gb_seqs.taxonomy.fa` and `gb_seqs.taxonomy` are the final files to present to Qiime.
 
-`gb_seqs.taxonomy.fa` contains sequences derived from `gb.seqs.fa`, potentially shortened to surround the blast HSP and with a modified identifier and a description that contains full taxonomic information in a Qiime-compatible format.  **Unidentified and excluded sequences do not appear here.**
+`gb_seqs.taxonomy.fa` contains sequences derived from `gb.seqs.fa`, potentially shortened to surround the blast HSP and with a modified identifier and a description that contains full taxonomic information in a Qiime-compatible format.  **Unidentified, redundant and excluded sequences do not appear here.**
 
-`gb_seqs.taxonomy` contains taxonomic information for each sequence, in the same order as in `gb_seqs.taxonomy.fa`.  **Unidentified and excluded sequences do not appear here.**
+`gb_seqs.taxonomy` contains taxonomic information for each sequence, in the same order as in `gb_seqs.taxonomy.fa`.  **Unidentified, redundant and excluded sequences do not appear here.**
 
 `gb_seqs.unidentified` contains one line per unidentified sequence.  If taxonomic information was not found in the database or was poorly formatted in the blast results, the identifiers of the sequences will appear here.
 
