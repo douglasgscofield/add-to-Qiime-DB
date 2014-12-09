@@ -1,33 +1,28 @@
 #!/usr/bin/env perl
 
 # Create Qiime-compatible taxonomy from sequence input file
-# 
-# Modified from:
 #
-# Script: taxonomy.pl
-# Description: Takes an ID file and determines the taxonomy hierarchy for each species 
-# Author: Steven Ahrendt
-# email: sahrendt0@gmail.com
-#        sahre001@ucr.edu
-# Date: 8.30.11
-#       v.1.0  :
-#               [x] Make local db
-#               [x] generate hierarchy
-#               [x] identify non-ranked levels
-#               [ ] flag missing levels
-#####################################
-# Usage: taxonomy.pl [-s] IDfile
-#####################################
-# -s: flag to show or hide ranks with value "no rank"
-#     (include flag to show ranks)
-#####################################
-# ID file should have the format:
-#  someID_someTaxID
-# where
-#  someID = either Accession or GI
-# and
-#  someTaxID = NCBI Taxonomy ID
-#####################################
+# Douglas G. Scofield
+# Evolutionary Biology Centre, Uppsala University
+# douglas.scofield@ebc.uu.se
+# 
+# Heavily modified from Steven Ahrendt's original script found at:
+#
+#      https://github.com/hyphaltip/mobedac-fungi/blob/master/scripts/taxonomy.pl
+#
+# which had the original attribution header:
+#
+## Script: taxonomy.pl
+## Description: Takes an ID file and determines the taxonomy hierarchy for each species 
+## Author: Steven Ahrendt
+## email: sahrendt0@gmail.com
+##        sahre001@ucr.edu
+## Date: 8.30.11
+##       v.1.0  :
+
+# I've made many modifications to the original script, with the goal of
+# adapting the input and output streams for use in producing Qiime-compatible
+# output.
 
 use strict;
 use warnings;
@@ -44,9 +39,10 @@ my $n_output_seqs = 0;
 my $n_unidentified = 0; # Unidentified organisms
 my $n_excluded = 0; # Excluded organisms
 my @regexp_excluded; # Regexps to exclude
-push @regexp_excluded, '(^(?!k__Fungi))|(uncultured |)marine ascomycete|uncultured fungus|fungal(| soil| endophyte) sp\.';
+push @regexp_excluded, '(^(?!k__Fungi))';
+push @regexp_excluded, 'uncultured';
 my $n_incomplete = 0; # Taxonomy incomplete: includes C or O or F or G and not P
-my $n_replaced = 0; # Taxonomy replaced from $incompletesfile
+my $n_replaced = 0; # Taxonomy replaced from $incompletefile
 my $n_redundant = 0; # Taxonomically redundantedundant organisms
 my $n_truncated = 0; # number of sequences truncated for $seq->length > $o_min_to_truncate
 my $n_expanded_truncated = 0; # number of sequences not truncated when $seq->length > $o_min_to_truncate, because of $o_min_after_truncate
@@ -63,14 +59,90 @@ my $idformat = 'HUDS%0.4u.01FU_%s';  # field 1 is filled with $id1, field 2 is f
 my $id1 = 1;
 my $o_usetmp = 0;
 my $accessionfile;
-my $incompletesfile;
+my $incompletefile;
 # Handle command-line options
 my $debug;
+my $o_help = 0;
 
-GetOptions( 'db-directory' => \$o_db_directory,
-            'db-index-directory' => \$o_db_index_directory,
+sub usage {
+    print STDERR "\n*** Error: @_ \n" if @_;
+    print STDERR "
+$0: Process blast results and GenBank sequences to produce Qiime-compatible taxonomy and sequence files.
+
+See https://github.com/douglasgscofield/Qiime-DB-enhance for more information.
+
+USAGE:
+
+    $0 [ options ] --accessionfile FILE FILE.fa
+
+The FILE given to the --accessionfile option may have any name, but must be
+produced by the companion script qiime_get_blast_ids_for_genbank.pl.
+
+'FILE.fa' may have any name, but must be a Fasta-format file produced by the
+companion script qiime_get_genbank_seqs.pl.
+
+The NCBI taxonomy DB must be downloaded prior to running this script; see the
+Github repository for further information.  For best performance an index should
+be generated for it ahead of time, see the Github repository for the procedure.
+Locations of the DB and its indices are specified with the --db-directory and
+--db-index-directory options.
+
+
+Command-line options:
+  --db-directory DIR         Directory for NCBI taxonomy DB  [$o_db_directory]
+  --db-index-directory DIR   Directory for NCBI taxonomy DB indices  [$o_db_index_directory]
+  --accessionfile FILE       *REQUIRED* File containing blast result columns after 
+                             processing with qiime_get_blast_ids_for_genbank.pl
+  --incompletefile FILE      NCBI taxonomic hierarchies are often incomplete, missing class,
+                             family, etc.  You can replace incomplete hierarchies with complete
+                             hierarchies using this file, which should contain the incomplete 
+                             hierarchy in column 1, and the complete hierarchy it should be
+                             replaced with in column 2.  Note that the hierarchy format should 
+                             follow the conventions of this script (hence Qiime).  Each run of
+                             the script produces a file suffixed with '.incomplete', containing
+                             all incomplete hierarchies.
+  --min-to-truncate INT      Sometimes sequences representing the best hit for a query within 
+                             GenBank are very large; using this option specifies the minimum
+                             length a GenBank sequence must be to be truncated in length to the
+                             extent of the HSP of the original blast hit.  The region surrounding
+                             the HSP can be expanded after truncation using --min-after-truncate.
+                             [$o_min_to_truncate]
+  --min-after-truncate INT   Minimum length of region around blast HSP, grown equally 
+                             around the HSP if necessary.  [$o_min_after_truncate]
+  --taxonid                  Append the taxonid to the taxonomy string as ' taxonid_xxxx'.  This 
+                             is not correct for Qiime input, but can be useful while diagnosing
+                             problems and evaluating incomplete taxonomic hierarchies.  [$o_taxonid]
+  --no-taxonid               Do not append ...
+  --redundant                Allow sequences with redundant taxonomic hierarchies.
+  --no-redundant             Do not allow sequences with redundant taxonomic hierarchies, 
+                             pick the longest HSP.  Only one blast hits against sequences with 
+                             the same taxonomic ID will be kept.  [$o_no_redundant]
+  --first                    When multiple taxon descriptors are found for a sequence, use the 
+                             first to find taxonomic information rather than fail.  [$o_first]
+  --retry                    When multiple taxon descriptors are found for a sequence, use each 
+                             in turn to find taxonomic information rather than fail.  [$o_retry]
+  --no-retry                 When multiple taxon descriptors, fail unless --first specified
+  --idformat STRING          Output sequence IDs with this format.  The format should contain
+                             two fields, an unsigned integer filled with sequential numbers
+                             starting with --id1, e.g. '%0.4u' and a string field '%s' filled
+                             with the GenBank accession name.  [$idformat]
+  --id1 INT                  Begin numbering sequences with this number, see --idformat.  [$id1]
+  --exclude STRING [ --exclude STRING ... ]
+                             Exclude sequences with taxonomic hierarchies that match the 
+                             regular expression provided in STRING.  May be specified multiple
+                             times.  [ @regexp_excluded ]
+  --usetmp                   Include a temporary identifier (process ID) in filenames [$o_usetmp]
+  --no-usetmp                Do not include a temporary identifier ...
+  --verbose | --debug        Produce more message output than you probably care to see.
+
+";
+    exit 1;
+};
+
+GetOptions( 'db-directory=s' => \$o_db_directory,
+            'db-index-directory=s' => \$o_db_index_directory,
             'accessionfile=s' => \$accessionfile,
-            'incompletesfile=s' => \$incompletesfile,
+            'incompletefile=s' => \$incompletefile,
             'min-to-truncate=i' => \$o_min_to_truncate,
             'min-after-truncate=i' => \$o_min_after_truncate,
             'taxonid' => \$o_taxonid,
@@ -78,21 +150,23 @@ GetOptions( 'db-directory' => \$o_db_directory,
             'redundant' => sub { $o_no_redundant = 0 },
             'no-redundant' => \$o_no_redundant,
             'first' => \$o_first,
-            'idformat' => \$idformat,
-            'id1' => \$id1,
             'retry' => \$o_retry,
             'no-retry' => sub { $o_retry = 0 },
+            'idformat=s' => \$idformat,
+            'id1=i' => \$id1,
             'exclude=s' => \@regexp_excluded,
             'usetmp' => \$o_usetmp,
             'no-usetmp' => sub { $o_usetmp = 0 },
 	        'verbose|debug!' => \$debug,
+	        'help|?' => \$o_help,
 	    );
-die "must use --accessionfile to supply a file of IDs and accession numbers" if not $accessionfile;
-die "must use --idformat to supply an ID format to use" if not $idformat;
-die "only one of --first and --retry may be specified" if $o_first and $o_retry;
-die "--min-to-truncate must be ≥ 0" if $o_min_to_truncate < 0;
-die "does not make sense for --min-after-truncate to be > --min-to-truncate" if $o_min_after_truncate > $o_min_to_truncate;
-
+usage() if $o_help;
+usage("must provide --accessionfile and one file of sequences") if not $accessionfile or @ARGV != 1;
+usage("must use --idformat to supply an ID format to use") if not $idformat;
+usage("only one of --first and --retry may be specified") if $o_first and $o_retry;
+usage("--id1 must be greater than or equal to 0") if $id1 < 0;
+usage("--min-to-truncate must be greater than or equal to 0") if $o_min_to_truncate < 0;
+usage("--min-after-truncate must be less than or equal to --min-to-truncate") if $o_min_after_truncate > $o_min_to_truncate;
 
 # Read accession file containing info in HSPs of blast hits
 
@@ -121,19 +195,19 @@ while (<$fh>) {
 print STDERR "\nLoaded accessions from $accessionfile containing $n_accessionfile_lines lines\n\n";
 
 
-# Read incompletes file containing more info on incomplete hierarchies
+# Read --incompletefile file containing replacement info for incomplete hierarchies
 
-my %INCOMPLETES;
-my $n_incompletesfile_lines = 0;
-if ($incompletesfile) {
-    open(my $fh, "<", $incompletesfile) or die "could not open $incompletesfile $!";
+my %INCOMPLETE;
+my $n_incompletefile_lines = 0;
+if ($incompletefile) {
+    open(my $fh, "<", $incompletefile) or die "could not open $incompletefile $!";
     while (<$fh>) {
-        ++$n_incompletesfile_lines;
+        ++$n_incompletefile_lines;
         chomp;
         my @l = split /\t/;
-        $INCOMPLETES{$l[0]} = $l[1];
+        $INCOMPLETE{$l[0]} = $l[1];
     }
-    print STDERR "\nLoaded incomplete taxonomic hierarchies from $accessionfile containing $n_incompletesfile_lines lines\n\n";
+    print STDERR "\nLoaded incomplete taxonomic hierarchies from $accessionfile containing $n_incompletefile_lines lines\n\n";
 }
 
 
@@ -239,14 +313,17 @@ sub generate_hierarchy($$$) {
         }
         $curr = $curr->ancestor;
     }
+    $ranks_seen->{is_incomplete} = 0;
+    $ranks_seen->{was_incomplete} = 0;
     if (!$ranks_seen->{phylum} or !$ranks_seen->{phylum} or ! $ranks_seen->{class} or 
         !$ranks_seen->{order} or !$ranks_seen->{family} or !$ranks_seen->{genus}) {
         $ranks_seen->{is_incomplete} = 1;
     }
     my $hierarchy = join(";", @hierarchy);
-    if (exists $INCOMPLETES{$hierarchy}) {
-        $hierarchy = $INCOMPLETES{$hierarchy};
+    if (exists $INCOMPLETE{$hierarchy}) {
+        $hierarchy = $INCOMPLETE{$hierarchy};
         $ranks_seen->{was_incomplete} = 1;
+        $ranks_seen->{is_incomplete} = 0;
     }
     #return @hierarchy;
     return $hierarchy;
@@ -270,12 +347,13 @@ my $outfile_unidentified = "$filename.unidentified";
 my $outfile_redundant = "$filename.redundant";
 my $outfile_excluded = "$filename.excluded";
 my $outfile_incomplete = "$filename.incomplete";
+my $outfile_wasincomplete = "$filename.wasincomplete";
 my $outfile_truncated = "$filename.truncated";
 my $out = Bio::SeqIO->new(-format=> 'fasta',
 			              -file  => ">$outfile_seqs");
 open(TAXONOMY,">$outfile_taxonomy");
 open(UNIDENTIFIED,">$outfile_unidentified");
-open(INCOMPLETES,">$outfile_incomplete");
+open(INCOMPLETE,">$outfile_incomplete");
 open(REDUNDANT,">$outfile_redundant");
 open(EXCLUDED,">$outfile_excluded");
 open(TRUNCATED,">$outfile_truncated");
@@ -419,11 +497,11 @@ while (my $seq = $seqio->next_seq) {
     # If we modified the taxonomy, or it was incomplete, report that
     if ($acc->{was_incomplete}) {
         ++$n_replaced;  # don't set in generate_hierarchy(), that might be used at other times
-        print INCOMPLETES "HIERARCHY_REPLACED\t$final_name\t$hierarchy\n";
+        print INCOMPLETE "HIERARCHY_REPLACED\t$final_name\t$hierarchy\n";
     } elsif ($acc->{is_incomplete}) {
         # incomplete taxonomy, note it
         ++$n_incomplete;
-        print INCOMPLETES "HIERARCHY_INCOMPLETE\t$final_name\t$hierarchy\n";
+        print INCOMPLETE "HIERARCHY_INCOMPLETE\t$final_name\t$hierarchy\n";
     }
 
     # Truncate subject sequence if necessary

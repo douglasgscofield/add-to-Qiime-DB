@@ -86,20 +86,29 @@ We now find full taxonomic information associated with the retrieved sequences a
 
 Two other options of note are `--min-to-truncate` (default 1000), which sets a minimum length (bp) of GenBank target sequence which will be subject to target truncation (shortening around the HSP), and `--min-after-truncate` (default 300), which is the minimum length of the truncation result, expanded equally up- and downstream of the HSP.  Target truncation shortens the sequence to just the region indicated by the start and end positions of the HSP returned by the Blast results above, and then expands the site.  This can be very useful for producing consistently-sized sequences if the ITS hit is within a large (perhaps multi-Mbp) GenBank sequence. 
 
+There are also several other options that might be useful, including a facility for replacing taxonomic hierarchies that are incomplete.  Find out more by using the `--help` option.
+
 ```bash
 qiime_get_taxonomy_from_seqs.pl --exclude "uncultured fungus" --accessionfile seqs.ids gb_seqs.fa
 ```
 
-The output of this script is in several files.  For a set of sequences called `gb_seqs.fa` the files called `gb_seqs.taxonomy.fa` and `gb_seqs.taxonomy` are the final files to present to Qiime.
+Output files
+------
 
-`gb_seqs.taxonomy.fa`: 
-sequences from `gb.seqs.fa` but with a modified identifier and a description that contains full taxonomic information in a Qiime-compatible format.  **Unidentified and excluded sequences do not appear here.**
+The output of this script is in several files.  For a set of sequences called `gb_seqs.fa` the files are prefixed with `gb_seqs.`.
 
-`gb_seqs.taxonomy`:
-one line per sequence, containing identifiers and full taxonomic information in the same order as in `gb_seqs.taxonomy.fa`.  **Unidentified and excluded sequences do not appear here.**
+`gb_seqs.taxonomy.fa` and `gb_seqs.taxonomy` are the final files to present to Qiime.
 
-`gb_seqs.unidentified`:
-one line per unidentified sequence.  If taxonomic information was not found in the database or was poorly formatted, the identifiers of the sequences appear here.
+`gb_seqs.taxonomy.fa` contains sequences derived from `gb.seqs.fa`, potentially shortened to surround the blast HSP and with a modified identifier and a description that contains full taxonomic information in a Qiime-compatible format.  **Unidentified and excluded sequences do not appear here.**
 
-`gb_seqs.excluded`:
-one line per excluded sequence.  Sequences appear here because their taxonomic information matched a regular expression provided with `--exclude` option.
+`gb_seqs.taxonomy` contains taxonomic information for each sequence, in the same order as in `gb_seqs.taxonomy.fa`.  **Unidentified and excluded sequences do not appear here.**
+
+`gb_seqs.unidentified` contains one line per unidentified sequence.  If taxonomic information was not found in the database or was poorly formatted in the blast results, the identifiers of the sequences will appear here.
+
+`gb_seqs.incomplete` contains one line per sequence with an incomplete taxonomic hierarchy, and one line per sequence for which the hierarchy was replaced following the contents of the `--incompletefile` file.
+
+`gb_seqs.redundant` contains one line per sequence that was excluded from final results for duplicating a taxonomic hierarchy also matched by another sequence with a longer HSP.
+
+`gb_seqs.excluded` contains one line per sequence that was excluded from output because its taxonomic hierarchy matched a regular expression provided with the `--exclude` option.
+
+`gb_seqs.truncated` contains one line per sequence that was truncated from its original size to the HSP following `--min-to-truncate`, and also contains information if the sequence was then expanded to a larger size following `--min-after-truncate`.
