@@ -1,7 +1,7 @@
-Qiime-DB-enhance
+Scripts for augmenting a Qiime database
 =====
 
-A small collection of scripts to ease the enhancement of a Qiime reference database.  BioPerl is required, as is Gnu sort (on Macs, install `coreutils` using MacPorts and reference as `gsort`) and a local copy of the NCBI taxonomy database (see below).  Two of these scripts started life written by others and are extensively modified here.
+This is a small collection of scripts to ease the augmentation of a Qiime reference database.  BioPerl is required, as is `sort` and a local copy of the NCBI taxonomy database (see below).  Two of these scripts started life written by others and are extensively modified here.
 
 Blast for GenBank hits 
 ------
@@ -12,14 +12,18 @@ The workflow requires a few steps and is quite simple.  We start with a set of I
 blastn -db nt -query seqs.fa -outfmt "6 std staxids sscinames sskingdoms sblastnames" > seqs.bl6
 ```
 
+Only `"6 std staxids"` is strictly required by the next step but the other columns are useful for checking the taxonomic content of results.
+
 Extract hit information from Blast results
 ------
 
 Run these blast results through a small filter to extract the target gi ID, GenBank ID, taxon IDs, and start and end of the HSP in the target in a tab-delimited format.  The `qiime_get_blast_ids_for_genbank.pl` script depends upon the `-outfmt` string for the blast being as you see it above.  The `seqs.ids` file produced by this step is used in the two following steps.
 
 ```bash
-qiime_get_blast_ids_for_genbank.pl seqs.bl6 | sort -k1,2 -Vu > seqs.ids
+qiime_get_blast_ids_for_genbank.pl seqs.bl6 | sort -k1,2 -u > seqs.ids
 ```
+
+Note that the `sort -k1,2 -u` command removes redundant blast subject sequences for which the first two columns (the merged gi and taxon IDs and the GenBank accession ID) are identical.  There is no provision for choosing the most appropriate HSP, if you feel there might be some issues with the HSP chosen as a reference for a particular taxon, first check the filtering of the blast results here.
 
 Fetch GenBank sequences for the hits
 ------
@@ -43,14 +47,14 @@ tar xvzf taxdump.tar.gz
 cd ..
 ```
 
-After you create the database, now create an index for the NCBI databases.  This will be reused each time the script is run, and these indices must be rerun each time a new version of the NCBI taxonomy database is downloaded.
+After you unpack the database, create an index for it.  This will speed up usage of the script considerably.  These indices must be recreated each time a new version of the NCBI taxonomy database is downloaded.
 
 ```bash
 mkdir ncbi-indices
 perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force);'
 ```
 
-On a Mac, you might see an error while running this:
+You might see an error while running this:
 
 ~~~~
 $ perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force);'
@@ -60,7 +64,7 @@ perl(3790,0x7fff789a1310) malloc: *** mach_vm_map(size=18446744073704988672) fai
 *** set a breakpoint in malloc_error_break to debug
 ~~~~
 
-If you check the `ncbi-indices/` directory, you should still see the indices there:
+If you check the `ncbi-indices/` directory, you should still see the indices there (sizes will not be exact):
 
 ~~~~
 $ ls -l ncbi-indices/
