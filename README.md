@@ -85,7 +85,7 @@ Assemble taxonomic hierarchies for GenBank hits
 
 The previous scripts formatted sequence names and IDs to be helpful when searching for taxonomic information in this step.  The `qiime_get_taxonomy_from_seqs.pl` script originally started as the [`taxonomy.pl`](https://github.com/hyphaltip/mobedac-fungi/blob/master/scripts/taxonomy.pl) script in the [MOBeDAC Fungi Database](https://github.com/hyphaltip/mobedac-fungi) repository, and the initial commit of the script to this repository was with a copy of that script so modifications can be tracked.
 
-**Note**: The loading of the taxonomic database might challenge the memory capacity of desktop computers, that is why the indexing step is separated above.
+**Note**: If you choose not to create the indices above, this step may have a long initiation time and may generate errors, see above.
 
 If the taxonomic databases or their indices are in directories other than `ncbi/` and `ncbi-indices/`, respectively, their locations may be specified with `--db-directory` and `--db-index-directory`.
 
