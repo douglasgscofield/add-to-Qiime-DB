@@ -207,7 +207,7 @@ if ($incompletefile) {
         my @l = split /\t/;
         $INCOMPLETE{$l[0]} = $l[1];
     }
-    print STDERR "\nLoaded incomplete taxonomic hierarchies from $accessionfile containing $n_incompletefile_lines lines\n\n";
+    print STDERR "\nLoaded incomplete taxonomic hierarchies from $incompletefile containing $n_incompletefile_lines lines\n\n";
 }
 
 
@@ -547,11 +547,12 @@ printf STDERR "
 %8d output sequences  : $outfile_seqs
 %8d taxonomy          : $outfile_taxonomy
 %8d unidentified      : $outfile_unidentified
-%8d incomplete        : $outfile_incomplete
+%8d incomplete        : $outfile_incomplete with 'HIERARCHY_INCOMPLETE'
+%8d replaced          : $outfile_incomplete with 'HIERARCHY_REPLACED'
 %8d redundant         : $outfile_redundant
 %8d excluded          : $outfile_excluded when matching /".join("/ /", @regexp_excluded)."/
 %8d >$o_min_to_truncate bp truncated : $outfile_truncated
 %8d ...then expanded to $o_min_after_truncate bp if possible
 ", 
-$n_seqs, $n_output_seqs, $n_taxonomy, $n_unidentified, $n_incomplete, $n_redundant, $n_excluded, $n_truncated, $n_expanded_truncated;
+$n_seqs, $n_output_seqs, $n_taxonomy, $n_unidentified, $n_incomplete, $n_replaced, $n_redundant, $n_excluded, $n_truncated, $n_expanded_truncated;
 
