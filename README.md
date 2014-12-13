@@ -37,7 +37,7 @@ qiime_get_genbank_seqs.pl --gifile seqs.ids > gb_seqs.fa
 Create local copy of NCBI taxonomy database
 ------
 
-This script requires a local copy of the NCBI taxonomy database in an `ncbi/` directory within your working directory.  This is available from the [NCBI Taxonomy Database FTP site](ftp://ftp.ncbi.nih.gov/pub/taxonomy), as file `taxdump.tar.gz`, `taxdump.tar.Z`, or `taxdmp.zip`; download whichever is convenient for your operating system and file decompressor.  For `taxdump.tar.gz`, you can fetch and unpack the latest version into the `ncbi/` directory with:
+We require a local copy of the NCBI taxonomy database in an `ncbi/` directory within your working directory.  This is available from the [NCBI Taxonomy Database FTP site](ftp://ftp.ncbi.nih.gov/pub/taxonomy), as file `taxdump.tar.gz`, `taxdump.tar.Z`, or `taxdmp.zip`; download whichever is convenient for your operating system and file decompressor.  For `taxdump.tar.gz`, you can fetch and unpack the latest version into the `ncbi/` directory with:
 
 ```bash
 mkdir ncbi
@@ -47,14 +47,14 @@ tar xvzf taxdump.tar.gz
 cd ..
 ```
 
-After you unpack the database, create an index for it.  This will speed up usage of the script considerably.  These indices must be recreated each time a new version of the NCBI taxonomy database is downloaded.
+After you unpack the database, create an index for it.  By default this is created into `ncbi-indices/`.  This will speed up usage of the script considerably.  These indices must be recreated each time a new version of the NCBI taxonomy database is downloaded.
 
 ```bash
 mkdir ncbi-indices
 perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force);'
 ```
 
-You might see an error while running this:
+You might see an error while running this, especially on a Mac:
 
 ~~~~
 $ perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force);'
@@ -76,6 +76,8 @@ total 844928
 ~~~~
 
 As far as I have been able to tell, the indices are still correct at this point despite this error.
+
+If you are keeping the database or indices in directories other than `ncbi/` and `ncbi-indices/` and thus will be using the `--db-directory` and/or `--db-index-directory` options to the following script, then directory names will need to be modified when performing the steps above.
 
 
 Assemble taxonomic hierarchies for GenBank hits
