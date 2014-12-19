@@ -163,8 +163,7 @@ print STDERR "Number of taxonids only first file  : $n_tjust1\n";
 print STDERR "Number of taxonids only second file : $n_tjust2\n";
 print STDERR "Number of taxonids both files       : $n_tboth12\n";
 print STDERR "\n";
-print STDERR "Total taxonids                      : "
-  . ( $n_tjust1 + $n_tjust2 + $n_tboth12 ) . "\n";
+print STDERR "Total taxonids                      : " . ( $n_tjust1 + $n_tjust2 + $n_tboth12 ) . "\n";
 print STDERR "\n";
 print STDERR "Number of taxonids in files 1 and 2 : " . scalar( keys %T ) . "\n";
 print STDERR "Number of taxonids in completed     : " . scalar( keys %TC ) . "\n";

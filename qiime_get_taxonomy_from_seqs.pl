@@ -40,26 +40,21 @@ my $n_excluded     = 0;    # Excluded organisms
 my @regexp_excluded;       # Regexps to exclude
 push @regexp_excluded, '(^(?!k__Fungi))';
 push @regexp_excluded, 'uncultured';
-my $n_incomplete         = 0; # Taxonomy incomplete: includes C or O or F or G and not P
-my $n_replaced           = 0; # Taxonomy replaced from $incompletefile
-my $n_redundant          = 0; # Taxonomically redundantedundant organisms
-my $n_truncated          = 0; # number of sequences truncated for $seq->length > $o_min_to_truncate
-my $n_expanded_truncated = 0
-  ; # number of sequences not truncated when $seq->length > $o_min_to_truncate, because of $o_min_after_truncate
-my $show = 0;    # Show or hide ranks with value "no rank"
-my $o_first =
-  0;  # if there are multiple taxon ids separated by ' ' or ';', take the first rather than failing
-my $o_retry = 1
-  ; # if there are multiple taxon ids separated by ' ' or ';', try them in turn rather than failing
-my $o_taxonid      = 0;    # if taxonid_nnnnn should be appended to the taxonomic hierarchy
-my $o_no_redundant = 1;    # do not produce entries with redundant taxonomy; choose the longest HSP
-my $o_min_to_truncate =
-  400;    # if the GenBank sequence is longer than this, truncate it to the extent of the blast HSP
-my $o_min_after_truncate = 300
-  ; # if the GenBank sequence would be shorter than this after truncation, expand it until it is this long
+my $n_incomplete         = 0;             # Taxonomy incomplete: includes C or O or F or G and not P
+my $n_replaced           = 0;             # Taxonomy replaced from $incompletefile
+my $n_redundant          = 0;             # Taxonomically redundantedundant organisms
+my $n_truncated          = 0;             # number of sequences truncated for $seq->length > $o_min_to_truncate
+my $n_expanded_truncated = 0;             # number of sequences not truncated when $seq->length > $o_min_to_truncate, because of $o_min_after_truncate
+my $show                 = 0;             # Show or hide ranks with value "no rank"
+my $o_first              = 0;             # if there are multiple taxon ids separated by ' ' or ';', take the first rather than failing
+my $o_retry              = 1;             # if there are multiple taxon ids separated by ' ' or ';', try them in turn rather than failing
+my $o_taxonid            = 0;             # if taxonid_nnnnn should be appended to the taxonomic hierarchy
+my $o_no_redundant       = 1;             # do not produce entries with redundant taxonomy; choose the longest HSP
+my $o_min_to_truncate    = 400;           # if the GenBank sequence is longer than this, truncate it to the extent of the blast HSP
+my $o_min_after_truncate = 300;           # if the GenBank sequence would be shorter than this after truncation, expand it until it is this long
 my $o_db_directory       = "ncbi";
 my $o_db_index_directory = "ncbi-indices";
-my $idformat = 'HUDS%0.4u.01FU_%s'; # field 1 is filled with $id1, field 2 is filled with accession
+my $idformat = 'HUDS%0.4u.01FU_%s';       # field 1 is filled with $id1, field 2 is filled with accession
 my $id1      = 1;
 my $o_usetmp = 0;
 my $accessionfile;
@@ -214,16 +209,14 @@ if ($incompletefile) {
         my @l = split /\t/;
         $INCOMPLETE{ $l[0] } = $l[1];
     }
-    print STDERR
-"\nLoaded incomplete taxonomic hierarchies from $incompletefile containing $n_incompletefile_lines lines\n\n";
+    print STDERR "\nLoaded incomplete taxonomic hierarchies from $incompletefile containing $n_incompletefile_lines lines\n\n";
 }
 
 # Read local taxonomic database
 
 my $nodesfile = "$o_db_directory/nodes.dmp";
 my $namefile  = "$o_db_directory/names.dmp";
-print STDERR
-"\nLoading flatfile taxonomy db from '$nodesfile' and '$namefile', with indices in '$o_db_index_directory/' ...\n";
+print STDERR "\nLoading flatfile taxonomy db from '$nodesfile' and '$namefile', with indices in '$o_db_index_directory/' ...\n";
 my $taxdb = Bio::DB::Taxonomy->new(
     -source    => 'flatfile',
     -directory => $o_db_index_directory,    # the location of the index files
@@ -276,8 +269,7 @@ sub find_taxonid($) {
                 $org = shift @o;
             }
             else {
-                die
-"taxonid '$org' must be all-numeric; multiple ids may be separated by ';' if --first or --retry specified";
+                die "taxonid '$org' must be all-numeric; multiple ids may be separated by ';' if --first or --retry specified";
             }
         }
     }
@@ -285,8 +277,7 @@ sub find_taxonid($) {
     # If the input provided is a Taxonomy ID number, get the corresponding organism name
     my $input   = $org;
     my $taxonid = "";
-    if ( $input =~ /^\d+$/ )
-    {    # we need to look up the taxonid to set $input to its scientific_name
+    if ( $input =~ /^\d+$/ ) {    # we need to look up the taxonid to set $input to its scientific_name
         my $tax;
         while ($org) {
             $tax = $taxdb->get_taxon( -taxonid => $org );
@@ -313,7 +304,7 @@ sub generate_hierarchy($$$) {
     my $curr       = shift;
     my $taxonid    = shift;
     my $ranks_seen = shift;
-    return "" if not $curr;    # undefined taxonomy
+    return ""                                                       if not $curr;         # undefined taxonomy
     die "generate_hierarchy() requires valid taxonid for arg 2"     if not $taxonid;
     die "generate_hierarchy() requires reference to hash for arg 3" if not $ranks_seen;
     my @hierarchy;
@@ -324,7 +315,7 @@ sub generate_hierarchy($$$) {
             my $name         = getName($curr);
             my $name_no_rank = $name =~ /^</;
             if ( not $name_no_rank ) {
-                $name = $RANKS{ $curr->rank } . $name;    # add [kpcofgs]__ prefix to rank
+                $name = $RANKS{ $curr->rank } . $name;                                    # add [kpcofgs]__ prefix to rank
                 $ranks_seen->{ $curr->rank }++;
                 $name .= " taxonid_" . $taxonid if $taxonid and $curr->rank eq "species";
                 unshift @hierarchy, $name;
@@ -398,8 +389,7 @@ excluded          : $outfile_excluded when matching /" . join( "/ /", @regexp_ex
 # Go through fasta sequences, find taxonid, calculate hierarchy, add hierarchy info to
 # ACCESSION, and add to ENTRIES list for each hierarchy observed
 
-print STDERR
-"\nPass 1: Read sequences, calculate taxonomic hierarchies, note redundancies and exclusions\n\n";
+print STDERR "\nPass 1: Read sequences, calculate taxonomic hierarchies, note redundancies and exclusions\n\n";
 
 my %ENTRIES;
 
@@ -418,8 +408,7 @@ while ( my $seq = $seqio->next_seq ) {
 
     # verify %ACCESSION entry
     if ( $ACCESSION{ $seq->display_name }{key} ne $seq->display_name ) {
-        print STDERR
-"mismatch between expected key '$seq->display_name' and \$ACCESSION{\$seq->display_name}{key}, Dumper() shows:\n";
+        print STDERR "mismatch between expected key '$seq->display_name' and \$ACCESSION{\$seq->display_name}{key}, Dumper() shows:\n";
         print STDERR Dumper( \$ACCESSION{ $seq->display_name } );
     }
     $ACCESSION{ $seq->display_name }{hierarchy}         = $hierarchy;
@@ -430,14 +419,12 @@ while ( my $seq = $seqio->next_seq ) {
     $ACCESSION{ $seq->display_name }{taxonid}           = $taxonid;
     $ACCESSION{ $seq->display_name }{taxon_descriptors} = $taxon_descriptors;
     if ( exists $ENTRIES{$hierarchy} ) {
-        print STDERR "ENTRIES: hierarchy '$hierarchy' redundancy found for sequence "
-          . $seq->display_name . "\n"
+        print STDERR "ENTRIES: hierarchy '$hierarchy' redundancy found for sequence " . $seq->display_name . "\n"
           if $debug;
         push @{ $ENTRIES{$hierarchy} }, $ACCESSION{ $seq->display_name };
     }
     else {
-        print STDERR "ENTRIES: hierarchy '$hierarchy' created for sequence "
-          . $seq->display_name . "\n"
+        print STDERR "ENTRIES: hierarchy '$hierarchy' created for sequence " . $seq->display_name . "\n"
           if $debug;
         $ENTRIES{$hierarchy} = [ $ACCESSION{ $seq->display_name } ];
     }
@@ -457,9 +444,7 @@ $seqio->close();
 
 # go through ENTRIES, and all but one of the sequence entries (the longest HSP) as redundant
 
-print STDERR "\nChecking for redundant taxa\n\n\%ENTRIES contains "
-  . scalar( keys %ENTRIES )
-  . " keys\n\n";
+print STDERR "\nChecking for redundant taxa\n\n\%ENTRIES contains " . scalar( keys %ENTRIES ) . " keys\n\n";
 foreach ( keys %ENTRIES ) {
     my $n = scalar( @{ $ENTRIES{$_} } );
     next if $n == 1;                        # only one entry with this hierarchy, leave it alone
@@ -471,13 +456,7 @@ foreach ( keys %ENTRIES ) {
     my $e = $_;
     foreach my $a ( @{ $ENTRIES{$e} } ) {
         if ( $a->{hsplen} > $maxlen ) {
-            print STDERR "    "
-              . $a->{key}
-              . " longest hsp "
-              . $a->{hsplen}
-              . ", old "
-              . ( $maxref ? $maxref->{key} : "<init>" )
-              . " $maxlen\n";
+            print STDERR "    " . $a->{key} . " longest hsp " . $a->{hsplen} . ", old " . ( $maxref ? $maxref->{key} : "<init>" ) . " $maxlen\n";
             $maxref->{is_redundant} = 1 if $maxref;    # invalidate the old larger
             $maxlen                 = $a->{hsplen};
             $maxref                 = $a;
@@ -491,8 +470,7 @@ foreach ( keys %ENTRIES ) {
 
 # reopen sequence file and generate new sequences and taxonomy after excluding redundants etc.
 
-print STDERR
-"\nPass 2: Read sequences again, output those not redundant or excluded, truncate where necessary\n\n";
+print STDERR "\nPass 2: Read sequences again, output those not redundant or excluded, truncate where necessary\n\n";
 
 $seqio = Bio::SeqIO->new(
     -format => 'fasta',
@@ -524,24 +502,16 @@ while ( my $seq = $seqio->next_seq ) {
       if not exists $ENTRIES{$hierarchy};
     if ( $acc->{is_redundant} ) {
         ++$n_redundant;
-        print STDERR "SEQUENCE_REDUNDANT:\t"
-          . $seq->display_name . "\t"
-          . $seq->length
-          . "\t$hierarchy\n"
+        print STDERR "SEQUENCE_REDUNDANT:\t" . $seq->display_name . "\t" . $seq->length . "\t$hierarchy\n"
           if $debug;
-        print REDUNDANT "SEQUENCE_REDUNDANT\t"
-          . $seq->display_name . "\t"
-          . $seq->length
-          . "\t$hierarchy\n";
+        print REDUNDANT "SEQUENCE_REDUNDANT\t" . $seq->display_name . "\t" . $seq->length . "\t$hierarchy\n";
         next;
     }
 
     # Exclude by matching sequences given in --exclude
     if ( $acc->{excluded} ) {
         ++$n_excluded;
-        print STDERR "HIERARCHY_EXCLUDED '$ID', '$input', '$hierarchy': matches '"
-          . $acc->{excluded}
-          . "'\n";    # if $debug;
+        print STDERR "HIERARCHY_EXCLUDED '$ID', '$input', '$hierarchy': matches '" . $acc->{excluded} . "'\n";    # if $debug;
         print EXCLUDED "HIERARCHY_EXCLUDED\t$ID\t$taxon_descriptors\t$hierarchy\n";
         next;
     }
@@ -572,8 +542,7 @@ while ( my $seq = $seqio->next_seq ) {
         my ( $start, $end ) = ( $hspstart, $hspend );
         my $d      = $o_min_after_truncate - $hsplen;
         my $status = "as_hsp";
-        if ( $d > 0 )
-        {    # we are short of --min-after-truncate, expand the truncation site evenly both sides
+        if ( $d > 0 ) {    # we are short of --min-after-truncate, expand the truncation site evenly both sides
             ++$n_expanded_truncated;
             $status = "expanded";
             ++$d if $d % 2;    # make even for cleaner math
@@ -583,9 +552,7 @@ while ( my $seq = $seqio->next_seq ) {
         }
         $seq->seq( $seq->subseq( $start, $end ) );
         my $newlen = $seq->length;
-        print STDERR "Truncating "
-          . $seq->display_name
-          . " from $slen to $newlen ($start-$end), HSP is $hsplen ($hspstart-$hspend)\t$status\n"
+        print STDERR "Truncating " . $seq->display_name . " from $slen to $newlen ($start-$end), HSP is $hsplen ($hspstart-$hspend)\t$status\n"
           if $debug;
         print TRUNCATED "TRUNCATED\t$final_name\t"
           . $seq->display_name
@@ -618,7 +585,5 @@ printf STDERR "
 %8d excluded          : $outfile_excluded when matching /" . join( "/ /", @regexp_excluded ) . "/
 %8d >$o_min_to_truncate bp truncated : $outfile_truncated
 %8d ...then expanded to $o_min_after_truncate bp if possible
-",
-  $n_seqs, $n_output_seqs, $n_taxonomy, $n_unidentified, $n_incomplete, $n_replaced, $n_redundant,
-  $n_excluded, $n_truncated, $n_expanded_truncated;
+", $n_seqs, $n_output_seqs, $n_taxonomy, $n_unidentified, $n_incomplete, $n_replaced, $n_redundant, $n_excluded, $n_truncated, $n_expanded_truncated;
 
