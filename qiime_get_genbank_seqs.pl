@@ -1,8 +1,7 @@
 #!/usr/bin/env perl 
 
-    eval 'exec /usr/bin/env perl  -S $0 ${1+"$@"}'
-    if 0; # not running under some shell
-
+eval 'exec /usr/bin/env perl  -S $0 ${1+"$@"}'
+  if 0;    # not running under some shell
 
 =head1 NAME
 
@@ -119,104 +118,111 @@ use Bio::SeqIO;
 use Getopt::Long;
 use Pod::Usage;
 
-my ($format,$debug,$primary,$accession,$taxonomy,%options);
+my ( $format, $debug, $primary, $accession, $taxonomy, %options );
+
 # for Qiime work, all four of these should remain unchanged
-$accession = 1;
-$taxonomy = 1;
-$format = 'fasta';
+$accession      = 1;
+$taxonomy       = 1;
+$format         = 'fasta';
 $options{'-db'} = 'nucleotide';
 
 $options{'-maxids'} = '100';
 my $gifile;
 GetOptions(
-		      'h|help' => sub { exec('perldoc', $0); 
-									exit(0);
-								},
-			  'v|verbose'       => \$debug,
-			  'gi|gifile|gis:s' => \$gifile,
-			  'p|primary'       => \$primary,
-			  'a|accession'     => \$accession,
-              'noaccession'     => sub { $accession = 0 },
-              't|taxonomy'      => \$taxonomy,
-              'notaxonomy'      => sub { $taxonomy = 0 },
-			  # DB::Query options	   
-			  'mindate:s'  => \$options{'-mindate'},
-			  'maxdate:s'  => \$options{'-maxdate'},
-			  'reldate:s'  => \$options{'-reldate'}, 
-			  'datetype:s' => \$options{'-datetype'}, # edat or mdat
-			  'maxids:i'   => \$options{'-maxids'},
-			  'q|query:s'  => \$options{'-query'},
-			 );
+    'h|help' => sub {
+        exec( 'perldoc', $0 );
+        exit(0);
+    },
+    'v|verbose'       => \$debug,
+    'gi|gifile|gis:s' => \$gifile,
+    'p|primary'       => \$primary,
+    'a|accession'     => \$accession,
+    'noaccession'     => sub { $accession = 0 },
+    't|taxonomy'      => \$taxonomy,
+    'notaxonomy'      => sub { $taxonomy = 0 },
+
+    # DB::Query options
+    'mindate:s'  => \$options{'-mindate'},
+    'maxdate:s'  => \$options{'-maxdate'},
+    'reldate:s'  => \$options{'-reldate'},
+    'datetype:s' => \$options{'-datetype'},    # edat or mdat
+    'maxids:i'   => \$options{'-maxids'},
+    'q|query:s'  => \$options{'-query'},
+);
 die "--taxonomy and --primary cannot co-occur" if $taxonomy and $primary;
 
-my $out = Bio::SeqIO->new(-format => $format); # write to STDOUT
+my $out = Bio::SeqIO->new( -format => $format );    # write to STDOUT
 
-my $dbh = Bio::DB::GenBank->new(-verbose => $debug);
+my $dbh = Bio::DB::GenBank->new( -verbose => $debug );
 
 sub dump_seq($) {
     my $seq = shift;
-    print STDERR "seq->primary_id       = ".$seq->primary_id."\n";
-    print STDERR "seq->display_id       = ".$seq->display_id."\n";
-    print STDERR "seq->accession_number = ".$seq->accession_number."\n";
-    print STDERR "seq->desc             = ".$seq->desc."\n";
+    print STDERR "seq->primary_id       = " . $seq->primary_id . "\n";
+    print STDERR "seq->display_id       = " . $seq->display_id . "\n";
+    print STDERR "seq->accession_number = " . $seq->accession_number . "\n";
+    print STDERR "seq->desc             = " . $seq->desc . "\n";
 }
 my %taxonomy_ids;
+
 sub process_id($) {
     $_ = shift;
     print STDERR "\$_ = $_\n" if $debug;
-    my ($id, undef) = split;
+    my ( $id, undef ) = split;
     print STDERR "\$id = $id\n" if $debug;
     my @id = split /_/, $id;
     die "invalid id for taxonomy: $id" if scalar @id != 2;
-    $taxonomy_ids{$id[0]} = $id;
+    $taxonomy_ids{ $id[0] } = $id;
     return $id[0];
 }
+
 sub process_seq($) {
     my $seq = shift;
     if ($debug) { print STDERR "process_seq BEFORE\n"; dump_seq($seq); }
     if ($taxonomy) {
-        $seq->desc($seq->accession_number." ".$seq->display_id." ".$seq->desc);
-        $seq->display_id($taxonomy_ids{$seq->primary_id});
-    } elsif ($primary) {
-        $seq->desc($seq->accession_number." ".$seq->display_id." ".$seq->desc);
-        $seq->display_id($seq->primary_id."_".$seq->display_id);
+        $seq->desc( $seq->accession_number . " " . $seq->display_id . " " . $seq->desc );
+        $seq->display_id( $taxonomy_ids{ $seq->primary_id } );
     }
-    print STDERR $seq->display_id."\t".$seq->accession_number."\n" if $accession;
+    elsif ($primary) {
+        $seq->desc( $seq->accession_number . " " . $seq->display_id . " " . $seq->desc );
+        $seq->display_id( $seq->primary_id . "_" . $seq->display_id );
+    }
+    print STDERR $seq->display_id . "\t" . $seq->accession_number . "\n" if $accession;
     if ($debug) { print STDERR "process_seq AFTER\n"; dump_seq($seq); }
 }
 my $query;
-if( $gifile ) {
-	my @ids;
-	open( my $fh => $gifile ) || die $!;
-	while(<$fh>) {
+if ($gifile) {
+    my @ids;
+    open( my $fh => $gifile ) || die $!;
+    while (<$fh>) {
         if ($taxonomy) {
-		    push @ids, $_;
-        } else {
-		    push @ids, split;
+            push @ids, $_;
         }
-	}
-	close($fh);	
-	while( @ids ) {
-		my @mini_ids = splice(@ids, 0, $options{'-maxids'});
+        else {
+            push @ids, split;
+        }
+    }
+    close($fh);
+    while (@ids) {
+        my @mini_ids = splice( @ids, 0, $options{'-maxids'} );
         @mini_ids = map { process_id($_) } @mini_ids if $taxonomy;
-		$query = Bio::DB::Query::GenBank->new(%options,
-														  -ids => \@mini_ids,
-														 );
-		my $stream = $dbh->get_Stream_by_query($query);
-		while( my $seq = $stream->next_seq ) {
+        $query = Bio::DB::Query::GenBank->new( %options, -ids => \@mini_ids, );
+        my $stream = $dbh->get_Stream_by_query($query);
+        while ( my $seq = $stream->next_seq ) {
             process_seq($seq);
-			$out->write_seq($seq);
-		}
-	}
-	exit;
-} elsif( $options{'-query'}) {
-    $options{'-query'} = process_id($options{'-query'}) if $taxonomy;
-	$query = Bio::DB::Query::GenBank->new(%options);
-} else {
-	die("no query string or gifile\n");
+            $out->write_seq($seq);
+        }
+    }
+    exit;
+}
+elsif ( $options{'-query'} ) {
+    $options{'-query'} = process_id( $options{'-query'} ) if $taxonomy;
+    $query = Bio::DB::Query::GenBank->new(%options);
+}
+else {
+    die("no query string or gifile\n");
 }
 my $stream = $dbh->get_Stream_by_query($query);
-while( my $seq = $stream->next_seq ) {
+while ( my $seq = $stream->next_seq ) {
     process_seq($seq);
-	$out->write_seq($seq);
+    $out->write_seq($seq);
 }
