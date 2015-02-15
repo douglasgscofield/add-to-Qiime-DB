@@ -263,7 +263,7 @@ The OTULB_10000 cluster contains the first sequence in the input, SR_243, while
 the OTULB_10001 cluster contains sequences SR_9, SR_443 and SR_395, etc.
 
 The `TSC-list-to-Qiime-input.pl` script will take these two files as input and
-produce a file to standard output consiting of the OTU names and the sequence
+produce a file to standard output consisting of the OTU names and the sequence
 names clustering into that OTU, with all names separated by tabs.
 
 ```bash
@@ -279,3 +279,6 @@ OTULB_10002	IR_39947
 OTULB_10003	SR_395	SR_416
 OTULB_10004	SR_5883
 ~~~~
+
+This is suitable for input to Qiime to create the consensus sequences for these
+OTUs.
