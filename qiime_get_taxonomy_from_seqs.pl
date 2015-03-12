@@ -319,7 +319,7 @@ sub generate_hierarchy($$$) {
     }
     $ranks_seen->{is_incomplete}  = 0;
     $ranks_seen->{was_incomplete} = 0;
-    if (   !$ranks_seen->{phylum}
+    if (   !$ranks_seen->{kingdom}
         or !$ranks_seen->{phylum}
         or !$ranks_seen->{class}
         or !$ranks_seen->{order}
