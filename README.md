@@ -147,7 +147,7 @@ hierarchy is compared.  Information about excluded taxa is written to the
 The `--reset-exclude` option can be used to remove the default exclude regexps
 and start from scratch.  For example, to reset excludes (which by default
 exclude everything not in Kingdom Fungi) and instead exclude everything not in
-Kingdom Viridilantae, you would use these options:
+Kingdom Viridiplantae, you would use these options:
 
     qiime_get_taxonomy_from_seqs.pl --reset-exclude --exclude '(^(?!k__Viridiplantae))' ...
 
