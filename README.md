@@ -50,7 +50,8 @@ cd ..
 After you unpack the database, create an index for it.  By default this is created into `ncbi-indices/`.  This will speed up usage of the script considerably.  These indices must be recreated each time a new version of the NCBI taxonomy database is downloaded.
 
 ```bash
-mkdir ncbi-indices
+mkdir -p ncbi-indices
+rm -f ncbi-indices/*
 perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force);'
 ```
 
@@ -89,7 +90,9 @@ The previous scripts formatted sequence names and IDs to be helpful when searchi
 
 If the taxonomic databases or their indices are in directories other than `ncbi/` and `ncbi-indices/`, respectively, their locations may be specified with `--db-directory` and `--db-index-directory`.
 
-We now find full taxonomic information associated with the retrieved sequences and put that into a format useful for Qiime.  The `--exclude` option may be used to exclude specific taxa from the final results.  This option may be used one or more times to specify regular expressions against which the taxonomic hierarchy is compared.  Information about excluded taxa is written to a file.
+We now find full taxonomic information associated with the retrieved sequences and put that into a format useful for Qiime.  The `--exclude` option may be used to exclude specific taxa from the final results.  This option may be used one or more times to specify regular expressions against which the taxonomic hierarchy is compared.  Information about excluded taxa is written to a file.  The `--reset-exclude` option can be used to remove the default exclude regexps and start from scratch.  For example, to reset excludes (which by default exclude everything not in Kingdom Fungi) and instead exclude everything not in Kingdom Planta, you would do:
+
+    qiime_get_taxonomy_from_seqs.pl --reset-exclude --exclude '(^(?!k__Viridiplantae))' ...
 
 Two other options of note are `--min-to-truncate` (default 1000), which sets a minimum length (bp) of GenBank target sequence which will be subject to target truncation (shortening around the HSP), and `--min-after-truncate` (default 300), which is the minimum length of the truncation result, expanded equally up- and downstream of the HSP.  Target truncation shortens the sequence to just the region indicated by the start and end positions of the HSP returned by the Blast results above, and then expands the site.  This can be very useful for producing consistently-sized sequences if the ITS hit is within a large (perhaps multi-Mbp) GenBank sequence. 
 

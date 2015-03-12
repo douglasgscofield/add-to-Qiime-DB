@@ -39,7 +39,6 @@ my $n_unidentified = 0;    # Unidentified organisms
 my $n_excluded     = 0;    # Excluded organisms
 my @regexp_excluded;       # Regexps to exclude
 push @regexp_excluded, '(^(?!k__Fungi))';
-push @regexp_excluded, 'uncultured';
 my $n_incomplete         = 0;             # Taxonomy incomplete: includes C or O or F or G and not P
 my $n_replaced           = 0;             # Taxonomy replaced from $incompletefile
 my $n_redundant          = 0;             # Taxonomically redundantedundant organisms
@@ -68,26 +67,18 @@ sub usage {
     print STDERR "\n*** Error: @_ \n" if @_;
     print STDERR "
 $0: Process blast results and GenBank sequences to produce Qiime-compatible taxonomy and sequence files.
-
 See https://github.com/douglasgscofield/Qiime-DB-enhance for more information.
-
 USAGE:
-
     $0 [ options ] --accessionfile FILE FILE.fa
-
 The FILE given to the --accessionfile option may have any name, but must be
 produced by the companion script qiime_get_blast_ids_for_genbank.pl.
-
 'FILE.fa' may have any name, but must be a Fasta-format file produced by the
 companion script qiime_get_genbank_seqs.pl.
-
 The NCBI taxonomy DB must be downloaded prior to running this script; see the
 Github repository for further information.  For best performance an index should
 be generated for it ahead of time, see the Github repository for the procedure.
 Locations of the DB and its indices are specified with the --db-directory and
 --db-index-directory options.
-
-
 Command-line options:
   --db-directory DIR         Directory for NCBI taxonomy DB  [$o_db_directory]
   --db-index-directory DIR   Directory for NCBI taxonomy DB indices  [$o_db_index_directory]
@@ -131,10 +122,12 @@ Command-line options:
                              Exclude sequences with taxonomic hierarchies that match the 
                              regular expression provided in STRING.  May be specified multiple
                              times.  [ @regexp_excluded ]
+  --reset-exclude            Remove all default 'exclude' expressions.  See the default exclude,
+                             which removes all but entries for Kingdom Fungi, for an example of
+                             a Perl regexp that excludes all but a specific kingdom.
   --usetmp                   Include a temporary identifier (process ID) in filenames [$o_usetmp]
   --no-usetmp                Do not include a temporary identifier ...
   --verbose | --debug        Produce more message output than you probably care to see.
-
 ";
     exit 1;
 }
@@ -155,6 +148,7 @@ GetOptions(
     'no-retry'             => sub { $o_retry = 0 },
     'idformat=s'           => \$idformat,
     'id1=i'                => \$id1,
+    'reset-exclude'        => sub { @regexp_excluded = () },
     'exclude=s'            => \@regexp_excluded,
     'usetmp'               => \$o_usetmp,
     'no-usetmp'            => sub { $o_usetmp = 0 },
@@ -586,4 +580,3 @@ printf STDERR "
 %8d >$o_min_to_truncate bp truncated : $outfile_truncated
 %8d ...then expanded to $o_min_after_truncate bp if possible
 ", $n_seqs, $n_output_seqs, $n_taxonomy, $n_unidentified, $n_incomplete, $n_replaced, $n_redundant, $n_excluded, $n_truncated, $n_expanded_truncated;
-
