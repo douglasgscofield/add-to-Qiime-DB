@@ -213,9 +213,9 @@ taxonomic information.  If the `--incompletefile` option is used, then the
 `.incomplete` file will additionally contain lines beginning with
 `HIERARCHY_REPLACED` listing replacements enabled by the file.
 
-For our project, we have produced a set of replacement taxonomic hierarchies
-for over 300 fungal taxonids, and provide these here in the file
-`completed-taxonomies-with-ids.20141213-fungi.txt`.  Columns 1 and 2 of this
+For one of our projects, we have produced a set of replacement taxonomic hierarchies
+for over 300 fungal taxonids.  These are available in the file
+[`completed-taxonomies-with-ids.20141213-fungi.txt`](completed-taxonomies-with-ids.20141213-fungi.txt).  Columns 1 and 2 of this
 file are the GenBank accession number and the taxonid and columns 3 and 4 are
 the incomplete and complete hierarchies, respectively.  This file can be
 provided to the script by using a named pipe to extract columns 3 and 4:
@@ -228,9 +228,10 @@ qiime_get_taxonomy_from_seqs.pl --incompletefile <(cut -f3-4 completed-taxonomie
 Converting TSC indexed output back to sequence names
 ------
 
-When clustering with TSC, it produces a three-column file containing the OTU
-name, the number of sequences in the cluster for that OTU, and 0-based indices
-indicating the corresponding sequence in the input Fasta file:
+Depending on the quality of the output from these scripts, you may want to perform
+additional clustering of HSPs prior to constructing final files for Qiime.
+
+When clustering with [TSC](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0030230), the tool produces a three-column file containing the OTU name, the number of sequences in the cluster for that OTU, and 0-based indices indicating the corresponding sequence in the input Fasta file:
 
 ~~~~
 OTULB_10000	1	0
@@ -284,3 +285,4 @@ OTULB_10004	SR_5883
 
 This is suitable for input to Qiime to create the consensus sequences for these
 OTUs.
+
