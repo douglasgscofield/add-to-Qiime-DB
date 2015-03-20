@@ -162,8 +162,7 @@ producing consistently-sized sequences if the ITS hit is within a large
 (perhaps multi-Mbp) GenBank sequence. 
 
 There are also several other options that might be useful, including a facility
-for [#completing-incomplete-taxonomic-hierarchies"](replacing taxonomic
-hierarchies that are incomplete).  Find out more by using the `--help`
+for [replacing taxonomic hierarchies that are incomplete](#completing-incomplete-taxonomic-hierarchies).  Find out more by using the `--help`
 option.
 
 A typical run would be:
