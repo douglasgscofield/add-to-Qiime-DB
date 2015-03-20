@@ -37,10 +37,12 @@ qiime_get_blast_ids_for_genbank.pl seqs.bl6 | sort -k1,2 -u > seqs.ids
 
 Note that the `sort -k1,2 -u` command removes redundant blast subject sequences
 for which the first two columns (the merged gi and taxon IDs and the GenBank
-accession ID) are identical.  There is no provision for choosing the most
-appropriate HSP, if you feel there might be some issues with the HSP chosen as
-a reference for a particular taxon, first check the filtering of the blast
-results here.
+accession ID) are identical.
+
+This process works solely on IDs, and there is no provision for choosing the
+most appropriate HSP.  If you feel there might be some issues with the HSP
+chosen as a reference for a particular taxon, first check the filtering of the
+blast results here.
 
 Fetch GenBank sequences for the hits
 ------
@@ -51,7 +53,7 @@ Fetch the GenBank sequences corresponding to these hits.
 qiime_get_genbank_seqs.pl --gifile seqs.ids > gb_seqs.fa
 ```
 
-The `qiime_get_genbank_seqs.pl` script was originally the BioPerl script
+The `qiime_get_genbank_seqs.pl` script began as the BioPerl script
 [`bp_download_query_genbank.pl`][bp_download_query_genbank.pl], and the initial
 commit of the script to this repository was with a copy of that script so
 modifications can be tracked.
@@ -136,9 +138,9 @@ with `--db-directory` and `--db-index-directory`.
 We now find full taxonomic information associated with the retrieved sequences
 and put that into a format useful for Qiime.  The `--exclude` option may be
 used to exclude specific taxa from the final results.  This option may be used
-one or more times to specify regular expressions against which the taxonomic
-hierarchy is compared.  Information about excluded taxa is written to the
-`.excluded` file, see below.
+one or more times to specify Perl-format regular expressions against which the
+taxonomic hierarchy is compared.  Information about excluded taxa is written to
+the `.excluded` file, see below.
 
 The `--reset-exclude` option can be used to remove the default exclude regexps
 and start from scratch.  For example, to reset excludes (which by default
@@ -160,8 +162,9 @@ producing consistently-sized sequences if the ITS hit is within a large
 (perhaps multi-Mbp) GenBank sequence. 
 
 There are also several other options that might be useful, including a facility
-for replacing taxonomic hierarchies that are incomplete.  Find out more by
-using the `--help` option.
+for <a href="#completing-incomplete-taxonomic-hierarchies">replacing taxonomic
+hierarchies that are incomplete</a>.  Find out more by using the `--help`
+option.
 
 A typical run would be:
 
