@@ -2,9 +2,11 @@ Scripts for augmenting a Qiime database
 =====
 
 This is a small collection of scripts to ease the augmentation of a Qiime
-reference database.  BioPerl is required, as is `sort` and a local copy of the
-NCBI taxonomy database (see below).  Two of these scripts started life written
-by others and are extensively modified here.
+reference database.  BioPerl is required, as is a `sort` utility and a local
+copy of the NCBI taxonomy database (for obtaining this, see below).  Two of
+these scripts started life written by others and are extensively modified here.
+In general all these scripts produce output to STDOUT, note the use of `>` 
+to capture this into files below.
 
 Blast for GenBank hits 
 ------
@@ -43,17 +45,19 @@ results here.
 Fetch GenBank sequences for the hits
 ------
 
-Fetch the GenBank sequences corresponding to these hits.  The
-`qiime_get_genbank_seqs.pl` script was originally the BioPerl script
-[`bp_download_query_genbank.pl`][bp_download_query_genbank.pl], and the initial
-commit of the script to this repository was with a copy of that script so
-modifications can be tracked.  The output of this script is to STDOUT.
-
-[bp_download_query_genbank.pl]: https://github.com/bioperl/bioperl-live/blob/master/scripts/utilities/bp_download_query_genbank.pl
+Fetch the GenBank sequences corresponding to these hits.
 
 ```bash
 qiime_get_genbank_seqs.pl --gifile seqs.ids > gb_seqs.fa
 ```
+
+The `qiime_get_genbank_seqs.pl` script was originally the BioPerl script
+[`bp_download_query_genbank.pl`][bp_download_query_genbank.pl], and the initial
+commit of the script to this repository was with a copy of that script so
+modifications can be tracked.
+
+[bp_download_query_genbank.pl]: https://github.com/bioperl/bioperl-live/blob/master/scripts/utilities/bp_download_query_genbank.pl
+
 
 Create local copy of NCBI taxonomy database
 ------
@@ -121,15 +125,7 @@ Assemble taxonomic hierarchies for GenBank hits
 ------
 
 The previous scripts formatted sequence names and IDs to be helpful when
-searching for taxonomic information in this step.  The
-`qiime_get_taxonomy_from_seqs.pl` script originally started as the
-[`taxonomy.pl`][taxonomy.pl] script in the [MOBeDAC Fungi Database][MOBeDAC]
-repository, and the initial commit of the script to this repository was with a
-copy of that script so modifications can be tracked.
-
-[taxonomy.pl]: https://github.com/hyphaltip/mobedac-fungi/blob/master/scripts/taxonomy.pl
-[MOBeDAC]: https://github.com/hyphaltip/mobedac-fungi
-
+searching for taxonomic information in this step.
 **Note**: If you choose not to create the indices above, this step may have a
 long initiation time and may generate errors, see above.
 
@@ -149,7 +145,9 @@ and start from scratch.  For example, to reset excludes (which by default
 exclude everything not in Kingdom Fungi) and instead exclude everything not in
 Kingdom Viridiplantae, you would use these options:
 
-    qiime_get_taxonomy_from_seqs.pl --reset-exclude --exclude '(^(?!k__Viridiplantae))' ...
+```bash
+qiime_get_taxonomy_from_seqs.pl --reset-exclude --exclude '(^(?!k__Viridiplantae))' ...
+```
 
 Two other options of note are `--min-to-truncate` (default 1000), which sets a
 minimum length (bp) of GenBank target sequence which will be subject to target
@@ -171,44 +169,32 @@ A typical run would be:
 qiime_get_taxonomy_from_seqs.pl --accessionfile seqs.ids gb_seqs.fa
 ```
 
+The `qiime_get_taxonomy_from_seqs.pl` script originally started as the
+[`taxonomy.pl`][taxonomy.pl] script in the [MOBeDAC Fungi Database][MOBeDAC]
+repository, and the initial commit of the script to this repository was with a
+copy of that script so modifications can be tracked.
+
+[taxonomy.pl]: https://github.com/hyphaltip/mobedac-fungi/blob/master/scripts/taxonomy.pl
+[MOBeDAC]: https://github.com/hyphaltip/mobedac-fungi
+
+
 Output files
 ------
 
-The output of this script is in several files.  For a set of sequences called
-`gb_seqs.fa` the files are prefixed with `gb_seqs.`.
+The output of the `qiime_get_taxonomy_from_seqs.pl` script is in several files.
+For a set of sequences called `gb_seqs.fa` the files are prefixed with
+`gb_seqs.`.
 
-`gb_seqs.taxonomy.fa` and `gb_seqs.taxonomy` are the final files to present to
-Qiime.
-
-`gb_seqs.taxonomy.fa` contains sequences derived from `gb_seqs.fa`, potentially
-shortened to surround the blast HSP and with a modified identifier and a
-description that contains full taxonomic information in a Qiime-compatible
-format.  **Unidentified, redundant and excluded sequences do not appear here.**
-
-`gb_seqs.taxonomy` contains taxonomic information for each sequence, in the
-same order as in `gb_seqs.taxonomy.fa`.  **Unidentified, redundant and excluded
-sequences do not appear here.**
-
-`gb_seqs.unidentified` contains one line per unidentified sequence.  If
-taxonomic information was not found in the database or was poorly formatted in
-the blast results, the identifiers of the sequences will appear here.
-
-`gb_seqs.incomplete` contains one line per sequence with an incomplete
-taxonomic hierarchy, and one line per sequence for which the hierarchy was
-replaced following the contents of the `--incompletefile` file.
-
-`gb_seqs.redundant` contains one line per sequence that was excluded from final
-results for duplicating a taxonomic hierarchy also matched by another sequence
-with a longer HSP.
-
-`gb_seqs.excluded` contains one line per sequence that was excluded from output
-because its taxonomic hierarchy matched a regular expression provided with the
-`--exclude` option.
-
-`gb_seqs.truncated` contains one line per sequence that was truncated from its
-original size to the HSP following `--min-to-truncate`, and also contains
-information if the sequence was then expanded to a larger size following
-`--min-after-truncate`.
+File name | Description
+--------- | -----------
+`gb_seqs.taxonomy.fa`, `gb_seqs.taxonomy` | Final files to present to Qiime
+`gb_seqs.taxonomy.fa` | Sequences derived from `gb_seqs.fa`, potentially shortened to surround the blast HSP and with a modified identifier and a description that contains full taxonomic information in a Qiime-compatible format.  **Unidentified, redundant and excluded sequences do not appear here.**
+`gb_seqs.taxonomy` | Taxonomic information for each sequence, in the same order as in `gb_seqs.taxonomy.fa`.  **Unidentified, redundant and excluded sequences do not appear here.**
+`gb_seqs.unidentified` | One line per unidentified sequence.  If taxonomic information was not found in the database or was poorly formatted in the blast results, the identifiers of the sequences will appear here.
+`gb_seqs.incomplete` | One line per sequence with an incomplete taxonomic hierarchy, and one line per sequence for which the hierarchy was replaced following the contents of the `--incompletefile` file
+`gb_seqs.redundant` | One line per sequence that was excluded from final results for duplicating a taxonomic hierarchy also matched by another sequence with a longer HSP
+`gb_seqs.excluded` | One line per sequence that was excluded from output because its taxonomic hierarchy matched a regular expression provided with the `--exclude` option
+`gb_seqs.truncated` | One line per sequence that was truncated from its original size to the HSP following `--min-to-truncate`, and also contains information if the sequence was then expanded to a larger size following `--min-after-truncate`
 
 
 Completing incomplete taxonomic hierarchies
@@ -232,7 +218,9 @@ file are the GenBank accession number and the taxonid and columns 3 and 4 are
 the incomplete and complete hierarchies, respectively.  This file can be
 provided to the script by using a named pipe to extract columns 3 and 4:
 
-    qiime_get_taxonomy_from_seqs.pl --incompletefile <(cut -f3-4 completed-taxonomies-with-ids.20141213-fungi.txt) ...
+```bash
+qiime_get_taxonomy_from_seqs.pl --incompletefile <(cut -f3-4 completed-taxonomies-with-ids.20141213-fungi.txt) ...
+```
 
 
 Converting TSC indexed output back to sequence names
