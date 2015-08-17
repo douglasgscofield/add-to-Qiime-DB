@@ -1,12 +1,13 @@
-Scripts for augmenting a Qiime database
+Scripts for adding annotated sequences to a Qiime database
 =====
 
-This is a small collection of scripts to ease the augmentation of a Qiime
-reference database.  BioPerl is required, as is a `sort` utility and a local
-copy of the NCBI taxonomy database (for obtaining this, see below).  Two of
-these scripts started life written by others and are extensively modified here.
-In general all these scripts produce output to STDOUT, note the use of `>` 
-to capture this into files below.
+This is a small collection of scripts to ease the process of adding
+taxonomically annotated sequences to a Qiime reference database.  Blast and
+BioPerl are required, as is a `sort` utility and a local copy of the NCBI
+taxonomy database (for obtaining this, see below).  Two of these scripts
+started life written by others and are extensively modified here.  In general
+all these scripts produce output to STDOUT, note the use of `>` to capture this
+into files below.
 
 Blast for GenBank hits 
 ------
@@ -25,15 +26,16 @@ columns are useful for checking the taxonomic content of results.
 Extract hit information from Blast results
 ------
 
-Run these blast results through a small filter to extract the target gi ID,
-GenBank ID, taxon IDs, and start and end of the HSP in the target in a
-tab-delimited format.  The `qiime_get_blast_ids_for_genbank.pl` script depends
-upon the `-outfmt` string for the blast being as you see it above.  The
-`seqs.ids` file produced by this step is used in the two following steps.
+Now run these blast results through a small filter to extract the target gi ID,
+GenBank ID, taxon IDs, and start and end of the HSP in the target:
 
 ```bash
 qiime_get_blast_ids_for_genbank.pl seqs.bl6 | sort -k1,2 -u > seqs.ids
 ```
+
+The `qiime_get_blast_ids_for_genbank.pl` script depends upon the `-outfmt` string
+for the blast being as you see it above.  The `seqs.ids` file produced by this
+step is used in the two following steps.
 
 Note that the `sort -k1,2 -u` command removes redundant blast subject sequences
 for which the first two columns (the merged gi and taxon IDs and the GenBank
@@ -47,7 +49,7 @@ blast results here.
 Fetch GenBank sequences for the hits
 ------
 
-Fetch the GenBank sequences corresponding to these hits.
+Now fetch the GenBank sequences corresponding to these hits:
 
 ```bash
 qiime_get_genbank_seqs.pl --gifile seqs.ids > gb_seqs.fa
@@ -114,13 +116,11 @@ total 844928
 -rw-r--r--  1 Douglas  staff   47665152 Dec  8 13:05 parents
 ~~~~
 
-As far as I have been able to tell, the indices are still correct at this point
-despite this error.
+As far as I have been able to tell, the indices are still correct at this point.
 
 If you are keeping the database or indices in directories other than `ncbi/`
-and `ncbi-indices/` and thus will be using the `--db-directory` and/or
-`--db-index-directory` options to the following script, then directory names
-will need to be modified when performing the steps above.
+and `ncbi-indices/` then you will need to use the `--db-directory` and/or
+`--db-index-directory` options to the following script.
 
 
 Assemble taxonomic hierarchies for GenBank hits
@@ -165,7 +165,7 @@ There are also several other options that might be useful, including a facility
 for [replacing taxonomic hierarchies that are incomplete](#completing-incomplete-taxonomic-hierarchies).  Find out more by using the `--help`
 option.
 
-A typical run would be:
+A typical run is:
 
 ```bash
 qiime_get_taxonomy_from_seqs.pl --accessionfile seqs.ids gb_seqs.fa
@@ -265,12 +265,12 @@ HHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 The OTULB_10000 cluster contains the first sequence in the input, SR_243, while
 the OTULB_10001 cluster contains sequences SR_9, SR_443 and SR_395, etc.
 
-The `TSC-list-to-Qiime-input.pl` script will take these two files as input and
+The `TSC_list_to_Qiime_input.pl` script will take these two files as input and
 produce a file to standard output consisting of the OTU names and the sequence
 names clustering into that OTU, with all names separated by tabs.
 
 ```bash
-TSC-list-to-Qiime-input.pl --fasta TSC-input.fa --otulist TSC-output.txt
+TSC_list_to_Qiime_input.pl --fasta TSC-input.fa --otulist TSC-output.txt
 ```
 
 produces
