@@ -66,7 +66,7 @@ modifications can be tracked.
 Create local copy of NCBI taxonomy database
 ------
 
-**NOTE: BioPerl 1.6.924 will remove the index files after creation and this step will not work.**  This is because BioPerl 1.6.924 tries to be helpful by removing taxonomy database index files, which are often placed in temporary directories, but also removes them when a different directory is specified with `-directory`, which is not so helpful.  The [BioPerl fix for this][BioPerlfix] is available in the BioPerl source repository, but there has not yet been an official release that contains the fix.  In the meantime, use an earlier version of BioPerl; **BioPerl 1.6.923** works fine.  You can check your version of BioPerl with the following code (also available at the [BioPerl FAQ][BioPerlFAQ]):
+**NOTE: BioPerl 1.6.924 will remove the index files after creation and this step will not work.**  This is because BioPerl 1.6.924 tries to be helpful by removing taxonomy database index files when it thinks you are done with them, as these are often placed in temporary directories and take up a lot of space.  Unfortunately it also removes them when a different directory is specified with `-directory`, which is not so helpful for us here.  The [BioPerl fix for this][BioPerlfix] is available in the BioPerl source repository, but there has not yet been an official release that contains this fix.  In the meantime, use an earlier version of BioPerl; **BioPerl 1.6.923** works fine.  You can check your version of BioPerl with the following code (also available at the [BioPerl FAQ][BioPerlFAQ]):
 
 ```bash
 perl -MBio::Root::Version -e 'print $Bio::Root::Version::VERSION,"\n"'
