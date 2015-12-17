@@ -66,6 +66,21 @@ modifications can be tracked.
 Create local copy of NCBI taxonomy database
 ------
 
+**NOTE: BioPerl 1.6.924 will remove the index files after creation and this step will not work.**  This is because BioPerl 1.6.924 tries to be helpful by removing taxonomy database index files, which are often placed in temporary directories, but also removes them when a different directory is specified with `-directory`, which is not so helpful.  The [BioPerl fix for this][BioPerlfix] is available in the BioPerl source repository, but there has not yet been an official release that contains the fix.  In the meantime, use an earlier version of BioPerl; **BioPerl 1.6.923** works fine.  You can check your version of BioPerl with the following code (also available at the [BioPerl FAQ][BioPerlFAQ]):
+
+```bash
+perl -MBio::Root::Version -e 'print $Bio::Root::Version::VERSION,"\n"'
+```
+
+If it prints `1.006924`, you have 1.6.924 and will have problems with this step.  You can use BioPerl 1.6.924 for other steps here, but not for creating the NCBI taxonomy indices.
+
+----
+
+[BioPerlfix]: https://github.com/douglasgscofield/bioperl-live/commit/fce8b14081869742a37162e3e150d0ec0806794f#diff-32471adf6acfbfca9ff7ffa71d4ae294
+[BioPerlFAQ]: http://www.bioperl.org/wiki/FAQ
+
+
+
 We require a local copy of the NCBI taxonomy database in an `ncbi/` directory
 within your working directory.  This is available from the [NCBI Taxonomy
 Database FTP site][NCBITaxonomy], as file `taxdump.tar.gz`, `taxdump.tar.Z`, or
@@ -86,12 +101,11 @@ cd ..
 After you unpack the database, create an index for it.  By default this is
 created into `ncbi-indices/`.  This will speed up usage of the script
 considerably.  These indices must be recreated each time a new version of the
-NCBI taxonomy database is downloaded.
+NCBI taxonomy database is downloaded.  Note `-force => 1`, this forces an overwrite of any index files that might already exist in the directory.
 
 ```bash
 mkdir -p ncbi-indices
-rm -f ncbi-indices/*
-perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force);'
+perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force => 1);'
 ```
 
 You might see an error while running this, especially on a Mac:
