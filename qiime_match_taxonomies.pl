@@ -2,7 +2,14 @@
 
 # Utility script used for matching up incomplete with complete taxonomic
 # hierarchies.  Probably not useful as is, but very useful in conjunction with
-# direct inspection of hierarchies.
+# direct inspection of hierarchies.  Part of
+#
+#      https://github.com/douglasgscofield/add-to-Qiime-DB
+#
+# Copyright (c) 2016, Douglas G. Scofield
+# Evolutionary Biology Centre, Uppsala University
+# douglas.scofield@ebc.uu.se
+
 
 use strict;
 use warnings;

@@ -105,7 +105,9 @@ debugging output
 
 Jason Stajich, jason-AT-bioperl.org
 
-Modified by Douglas Scofield to do Qiime-oriented work, douglas.scofield@ebc.uu.se
+Modified by Douglas Scofield (Uppsala University, douglas.scofield@ebc.uu.se) for Qiime-oriented work as part of
+
+    L<< add-to-Qiime-DB|https://github.com/douglasgscofield/add-to-Qiime-DB >>
 
 =cut
 

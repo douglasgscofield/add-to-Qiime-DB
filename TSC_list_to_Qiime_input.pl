@@ -1,5 +1,16 @@
 #!/usr/bin/env perl
 
+# Utility script to take output files from TSC ITS clustering and produce a file
+# suitable for input to Qiime for creation of consensus sequences.  Part of
+#
+#      https://github.com/douglasgscofield/add-to-Qiime-DB
+#
+# For more information and an example of use, see the repository README.md.
+#
+# Copyright (c) 2016, Douglas G. Scofield
+# Evolutionary Biology Centre, Uppsala University
+# douglas.scofield@ebc.uu.se
+
 use strict;
 use warnings;
 use Getopt::Long;

@@ -1,5 +1,13 @@
 #!/usr/bin/env perl
 
+# Parse blast results for GenBank IDs and hit coordinates.  Part of
+#
+#      https://github.com/douglasgscofield/add-to-Qiime-DB
+#
+# Copyright (c) 2016, Douglas G. Scofield
+# Evolutionary Biology Centre, Uppsala University
+# douglas.scofield@ebc.uu.se
+
 use strict;
 use warnings;
 

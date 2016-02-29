@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 
-# Create Qiime-compatible taxonomy from sequence input file
+# Create Qiime-compatible taxonomy from sequence input file, as part of 
+#
+#     https://github.com/douglasgscofield/add-to-Qiime-DB
 #
 # Douglas G. Scofield
 # Evolutionary Biology Centre, Uppsala University
@@ -19,7 +21,7 @@
 ##        sahre001@ucr.edu
 ## Date: 8.30.11
 ##       v.1.0  :
-
+#
 # I've made many modifications to the original script, with the goal of
 # adapting the input and output streams for use in producing Qiime-compatible
 # output.
