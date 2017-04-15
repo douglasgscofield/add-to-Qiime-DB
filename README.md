@@ -21,7 +21,7 @@ The workflow requires a few steps and is quite simple.  We start with a set of
 ITS sequences to blast, in Fasta format, say in `seqs.fa`.  We will have blast
 results returned in a table format that includes taxonomic information.
 
-**Note**: NCBI is dropping the usage of GI ('GenBank ID') identifiers.  These
+**Note**: [NCBI is dropping the usage of GI identifiers](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/).  These
 scripts were initially developed when the default sequence identifiers produced
 by Blast+ with the tabular output format included both GI and accession
 numbers.  Blast+ versions up to 2.4.0+ include both in their sequence
