@@ -21,12 +21,35 @@ The workflow requires a few steps and is quite simple.  We start with a set of
 ITS sequences to blast, in Fasta format, say in `seqs.fa`.  We will have blast
 results returned in a table format that includes taxonomic information.
 
+**Note**: NCBI is dropping the usage of GI ('GenBank ID') identifiers.  These
+scripts were initially developed when the default sequence identifiers produced
+by Blast+ with the tabular output format included both GI and accession
+numbers.  Blast+ versions up to 2.4.0+ include both in their sequence
+identifiers.  Beginning with 2.5.0+, the tabular output includes only the
+versioned accession number by default, so we request a modified set of tabular
+columns to get the complete sequence ID for each blast result.  Once I've had a
+chance to work out the rest of the scripts using the accession ID, this will be
+handled a little differently.
+
+### Blast through 2.4.0+
+
 ```bash
 blastn -db nt -query seqs.fa -outfmt "6 std staxids sscinames sskingdoms sblastnames" > seqs.bl6
 ```
 
 Only `"6 std staxids"` is strictly required by the next step but the other
 columns are useful for checking the taxonomic content of results.
+
+### Blast 2.5.0+ and later
+
+```bash
+blastn -db nt -query seqs.fa -outfmt "6 qaccver sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore staxids sscinames sskingdoms sblastnames" > seqs.bl6
+```
+
+Only `"6 qaccver sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore staxids"`
+is strictly required by the next step but the other
+columns are useful for checking the taxonomic content of results.
+
 
 Extract hit information from Blast results
 ------
