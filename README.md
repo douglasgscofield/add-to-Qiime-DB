@@ -21,34 +21,20 @@ The workflow requires a few steps and is quite simple.  We start with a set of
 ITS sequences to blast, in Fasta format, say in `seqs.fa`.  We will have blast
 results returned in a table format that includes taxonomic information.
 
-**Note**: [NCBI is dropping the usage of GI identifiers](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/).  These
-scripts were initially developed when the default sequence identifiers produced
-by Blast+ with the tabular output format included both GI and accession
-numbers.  Blast+ versions up to 2.4.0+ include both in their sequence
-identifiers.  Beginning with 2.5.0+, the tabular output includes only the
-versioned accession number by default, so we request a modified set of tabular
-columns to get the complete sequence ID for each blast result.  Once I've had a
-chance to work out the rest of the scripts using the accession ID, this will be
-handled a little differently.
-
-### Blast through 2.4.0+
+**Note**: [NCBI is phasing out the usage of GI
+identifiers](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/).
+If the subject IDs in the blast output tables contain
+`gi|number|gb|accession|`, then specify the `--with-gi` option to the scripts
+below.
 
 ```bash
 blastn -db nt -query seqs.fa -outfmt "6 std staxids sscinames sskingdoms sblastnames" > seqs.bl6
 ```
 
 Only `"6 std staxids"` is strictly required by the next step but the other
-columns are useful for checking the taxonomic content of results.
-
-### Blast 2.5.0+ and later
-
-```bash
-blastn -db nt -query seqs.fa -outfmt "6 qaccver sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore staxids sscinames sskingdoms sblastnames" > seqs.bl6
-```
-
-Only `"6 qaccver sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore staxids"`
-is strictly required by the next step but the other
-columns are useful for checking the taxonomic content of results.
+columns are useful for checking the taxonomic content of results.  If multiple
+cores are available, using `-num_threads` could speed up this step
+considerably.
 
 
 Extract hit information from Blast results
@@ -65,9 +51,9 @@ The `qiime_get_blast_ids_for_genbank.pl` script depends upon the `-outfmt` strin
 for the blast being as you see it above.  The `seqs.ids` file produced by this
 step is used in the two following steps.
 
-Note that the `sort -k1,2 -u` command removes redundant blast subject sequences
-for which the first two columns (the merged gi and taxon IDs and the GenBank
-accession ID) are identical.
+Note that the `sort -k1 -u` command removes redundant blast subject sequences
+for which the first column (the merged gi and taxon IDs) are identical.  If the
+`--with-gi` option was specified, the sort command should be `sort -k1,2 -u`.
 
 This process works solely on IDs, and there is no provision for choosing the
 most appropriate HSP.  If you feel there might be some issues with the HSP

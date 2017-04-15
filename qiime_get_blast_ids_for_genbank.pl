@@ -10,16 +10,58 @@
 
 use strict;
 use warnings;
+use Getopt::Long;
+
+my $o_with_gi = 0;
+
+sub usage() {
+print STDERR "
+USAGE
+
+    $0 [ --with-gi ] blast-output-table > id-table
+
+If the blast table uses subject IDs containing GIs (prior to Blast 2.5.0+),
+specify the --with-gi option.
+
+OUTPUT TO STDOUT
+
+A table containing the versioned accession number and the taxon ID, separated
+by an underscore, followed by the start and end of the hit in the target.
+
+    accession.version_taxon-ID <tab> start <tab> end
+
+With --with-gi, the subject ID is expected to be in the previous NCBI format,
+which contains 'gi|GI-number|gb|accession.version'.  A somewhat different
+format is written to stdout, with the GI number and taxon IDs separated by an
+underscore. Note the version is also stripped off the accession number in this
+case.
+
+    GI-number_taxon-ID <tab> accession <tab> start <tab> end
+
+";
+    exit(1);
+}
+
+GetOptions("with-gi" => \$o_with_gi) and @ARGV or usage();
 
 while (<>) {
     chomp;
-    my @l  = split;
-    my @ll = split /\|/, $l[1];    # parse the target ID returned by Blast gi|gi-ID|gb|genbank-ID|
-    my $gi = $ll[1];               # the gi ID
-    my $gb = $ll[3];               # the gb ID
-    $gb =~ s/\.[0-9]+$//;          # strip version number off the end: .1, .2
-    my $start = $l[8];             # start of hit in target: > end if - strand
-    my $end   = $l[9];             # start of hit in target: < start if - strand
-    my $tid   = $l[12];            # taxonid
-    print STDOUT "${gi}_${tid}\t$gb\t$start\t$end\n";
+    my @l = split /\t/;
+    if ($o_with_gi) {
+        my @ll = split /\|/, $l[1];    # parse the target ID returned by Blast gi|gi-number|gb|accession.version|
+        my $gi = $ll[1];               # the gi ID
+        my $accession = $ll[3];        # accession.version
+        $accession =~ s/\.[0-9]+$//;   # strip version number off the end: .1, .2, etc.
+        my $start = $l[8];             # start of hit in target: > end if - strand
+        my $end   = $l[9];             # start of hit in target: < start if - strand
+        my $tid   = $l[12];            # taxonid
+        print STDOUT "${gi}_${tid}\t$accession\t$start\t$end\n";
+    } else {
+        my $accession = $l[1];         # accession.version
+        my $start = $l[8];             # start of hit in target: > end if - strand
+        my $end   = $l[9];             # start of hit in target: < start if - strand
+        my $tid   = $l[12];            # taxonid
+        print STDOUT "${accession}_${tid}\t$start\t$end\n";
+    }
 }
+
