@@ -9,7 +9,7 @@ started life written by others and are extensively modified here.  In general
 all these scripts produce output to STDOUT, note the use of `>` to capture this
 into files below.
 
-We used these scripts to prepare the database used in:
+We used earlier versions of these scripts to prepare the database used in:
 
 Urbina H, DG Scofield, M Cafaro and A Rosling. 2016. DNA-metabarcoding uncovers the diversity of soil-inhabiting fungi in the tropical island of Puerto Rico. [_Mycoscience_ **57** (3): 217-227](http://dx.doi.org/10.1016/j.myc.2016.02.001). Preprint available at [bioRxiv](http://dx.doi.org/10.1101/025668).
 
