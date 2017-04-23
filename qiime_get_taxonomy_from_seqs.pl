@@ -73,8 +73,8 @@ sub usage {
 $0: Process blast results and GenBank sequences to produce Qiime-compatible taxonomy and sequence files.
 See https://github.com/douglasgscofield/add-to-Qiime-DB for more information.
 USAGE:
-    $0 [ options ] --accessionfile FILE FILE.fa
-The FILE given to the --accessionfile option may have any name, but must be
+    $0 [ options ] --accession-file FILE FILE.fa
+The FILE given to the --accession-file option may have any name, but must be
 produced by the companion script qiime_get_blast_ids_for_genbank.pl.
 'FILE.fa' may have any name, but must be a Fasta-format file produced by the
 companion script qiime_get_genbank_seqs.pl.
@@ -86,7 +86,7 @@ Locations of the DB and its indices are specified with the --db-directory and
 Command-line options:
   --db-directory DIR         Directory for NCBI taxonomy DB  [$o_db_directory]
   --db-index-directory DIR   Directory for NCBI taxonomy DB indices  [$o_db_index_directory]
-  --accessionfile FILE       *REQUIRED* File containing blast result columns after 
+  --accession-file FILE      *REQUIRED* File containing blast result columns after 
                              processing with qiime_get_blast_ids_for_genbank.pl
   --incompletefile FILE      NCBI taxonomic hierarchies are often incomplete, missing class,
                              family, etc.  You can replace incomplete hierarchies with complete
@@ -138,7 +138,7 @@ Command-line options:
 GetOptions(
     'db-directory=s'       => \$o_db_directory,
     'db-index-directory=s' => \$o_db_index_directory,
-    'accessionfile=s'      => \$accessionfile,
+    'accession-file=s'     => \$accessionfile,
     'incompletefile=s'     => \$incompletefile,
     'min-to-truncate=i'    => \$o_min_to_truncate,
     'min-after-truncate=i' => \$o_min_after_truncate,
@@ -159,7 +159,7 @@ GetOptions(
     'help|?'               => \$o_help,
 );
 usage() if $o_help;
-usage("must provide --accessionfile and one file of sequences")
+usage("must provide --accession-file and one file of sequences")
   if not $accessionfile or @ARGV != 1;
 usage("must use --idformat to supply an ID format to use")    if not $idformat;
 usage("only one of --first and --retry may be specified")     if $o_first and $o_retry;

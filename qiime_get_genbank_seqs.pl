@@ -10,7 +10,7 @@ IDs to STDERR.
 
 =head1 USAGE
 
-qiime_get_genbank_seqs.pl --accessionfile seqs.ids > seqs.fa 2>seqs_ids.txt
+qiime_get_genbank_seqs.pl --accession-file seqs.ids > seqs.fa 2>seqs_ids.txt
 
 This script is derived from the BioPerl script bp_download_query_genbank.pl, and
 is modified to support its use with augmenting a Qiime reference database as
@@ -72,7 +72,7 @@ GetOptions(
         exit(0);
     },
     'v|verbose'       => \$debug,
-    'accessionfile:s' => \$accessionfile,
+    'accession-file:s' => \$accessionfile,
 
     # DB::Query options
     'mindate:s'  => \$options{'-mindate'},
@@ -136,7 +136,7 @@ if ($accessionfile) {
     exit;
 }
 else {
-    die("no accessionfile\n");
+    die("no --accession-file\n");
 }
 my $stream = $dbh->get_Stream_by_query($query);
 while ( my $seq = $stream->next_seq ) {

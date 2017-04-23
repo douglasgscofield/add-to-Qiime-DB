@@ -66,7 +66,7 @@ Fetch GenBank sequences for the hits
 Now fetch the GenBank sequences corresponding to these hits:
 
 ```bash
-qiime_get_genbank_seqs.pl --accessionfile seqs.ids > gb_seqs.fa
+qiime_get_genbank_seqs.pl --accession-file seqs.ids > gb_seqs.fa
 ```
 
 The `qiime_get_genbank_seqs.pl` script began as the BioPerl script
@@ -132,8 +132,8 @@ Assemble taxonomic hierarchies for GenBank hits
 
 The previous scripts formatted sequence names and IDs to be helpful when
 searching for taxonomic information in this step.
-**Note**: If you choose not to create the indices above, this step may have a
-long initiation time and may generate errors, see above.
+**Note**: If you chose not to create the indices above, this step may have a
+long initiation time.
 
 If the taxonomic databases or their indices are in directories other than
 `ncbi/` and `ncbi-indices/`, respectively, their locations may be specified
@@ -172,7 +172,7 @@ option.
 A typical run is:
 
 ```bash
-qiime_get_taxonomy_from_seqs.pl --accessionfile seqs.ids gb_seqs.fa
+qiime_get_taxonomy_from_seqs.pl --accession-file seqs.ids gb_seqs.fa
 ```
 
 The `qiime_get_taxonomy_from_seqs.pl` script originally started as the
