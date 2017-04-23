@@ -34,8 +34,8 @@ considerably.
 Extract hit information from Blast results
 ------
 
-Now run these blast results through a small filter to extract the target gi ID,
-GenBank ID, taxon IDs, and start and end of the HSP in the target:
+Now run these blast results through a small filter to extract the versioned
+accession numbers, taxon IDs, and start and end of the HSP in the target:
 
 ```bash
 qiime_get_blast_ids_for_genbank.pl seqs.bl6 | sort -k1,2 -u > seqs.ids
@@ -48,17 +48,16 @@ step is used in the two following steps.
 The `sort -k1,2 -u` command removes redundant blast subject sequences
 for which the first two columns (accession.version and taxon ID) are identical.
 
-This process works solely on accessions and IDs, and there is no provision for
-choosing the most appropriate HSP.  If you feel there might be some issues with
-the HSP chosen as a reference for a particular taxon, first check the filtering
-of the blast results here.
+This process works solely on accessions and taxon IDs, and there is no
+provision for choosing the most appropriate HSP.  If you feel there might be
+some issues with the HSP chosen as a reference for a particular taxon, first
+check the filtering of the blast results here.
 
 **Note**: [NCBI has begun phasing out the usage of GI
 identifiers](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/)
-in favour of versioned accession numbers, and these scripts have been modified
-accordingly.  If the subject IDs in the blast output tables use the older
-format (`gi|number|gb|accession.version|`), this script will print a message to
-STDERR and the versioned accession number will be used as the identifier.
+in favour of versioned accession numbers.  If the subject IDs in the blast
+output tables use the older format (`gi|number|gb|accession.version|`), the
+versioned accession number will be used as the identifier.
 
 
 Fetch GenBank sequences for the hits
