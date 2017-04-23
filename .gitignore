@@ -1,5 +1,5 @@
 test
 ncbi
 ncbi-indices
-seqs.bl6
-seqs.fasta
+seqs.*
+gb_seqs.*

@@ -55,7 +55,9 @@ my $o_min_to_truncate    = 400;           # if the GenBank sequence is longer th
 my $o_min_after_truncate = 300;           # if the GenBank sequence would be shorter than this after truncation, expand it until it is this long
 my $o_db_directory       = "ncbi";
 my $o_db_index_directory = "ncbi-indices";
-my $idformat = 'HUDS%0.4u.01FU_%s';       # field 1 is filled with $id1, field 2 is filled with accession
+my $taxsep   = '_tax';
+my $re_taxsep = qr/$taxsep/;
+my $idformat = 'ID_%0.4u.01FU_%s';       # field 1 is filled with $id1, field 2 is filled with accession
 my $id1      = 1;
 my $o_usetmp = 0;
 my $accessionfile;
@@ -69,7 +71,7 @@ sub usage {
     print STDERR "\n*** Error: @_ \n" if @_;
     print STDERR "
 $0: Process blast results and GenBank sequences to produce Qiime-compatible taxonomy and sequence files.
-See https://github.com/douglasgscofield/Qiime-DB-enhance for more information.
+See https://github.com/douglasgscofield/add-to-Qiime-DB for more information.
 USAGE:
     $0 [ options ] --accessionfile FILE FILE.fa
 The FILE given to the --accessionfile option may have any name, but must be
@@ -96,16 +98,15 @@ Command-line options:
                              all incomplete hierarchies.
   --min-to-truncate INT      Sometimes sequences representing the best hit for a query within 
                              GenBank are very large; using this option specifies the minimum
-                             length a GenBank sequence must be to be truncated in length to the
+                             length (bp) a GenBank sequence must be to be truncated in length to the
                              extent of the HSP of the original blast hit.  The region surrounding
                              the HSP can be expanded after truncation using --min-after-truncate.
                              [$o_min_to_truncate]
-  --min-after-truncate INT   Minimum length of region around blast HSP, grown equally 
+  --min-after-truncate INT   Minimum length (bp) of region around blast HSP, grown equally 
                              around the HSP if necessary.  [$o_min_after_truncate]
   --taxonid                  Append the taxonid to the taxonomy string as ' taxonid_xxxx'.  This 
                              is not correct for Qiime input, but can be useful while diagnosing
                              problems and evaluating incomplete taxonomic hierarchies.  [$o_taxonid]
-  --no-taxonid               Do not append ...
   --redundant                Allow sequences with redundant taxonomic hierarchies.
   --no-redundant             Do not allow sequences with redundant taxonomic hierarchies, 
                              pick the longest HSP.  Only one blast hits against sequences with 
@@ -118,7 +119,7 @@ Command-line options:
   --idformat STRING          Output sequence IDs with this format.  The format should contain
                              two fields, an unsigned integer filled with sequential numbers
                              starting with --id1, e.g. '%0.4u' and a string field '%s' filled
-                             with the GenBank accession name.  [$idformat]
+                             with the GenBank accession.  [$idformat]
   --id1 INT                  Begin numbering sequences with this number, see --idformat.  [$id1]
   --exclude STRING [ --exclude STRING ... ]
                              Exclude sequences with taxonomic hierarchies that match the 
@@ -182,14 +183,15 @@ while (<$fh>) {
     chomp;
     ++$n_accessionfile_lines;
     my @l          = split /\t/;
-    my $gi_taxonid = $l[0];
+    my $accv_taxonid = $l[0] . $taxsep . $l[1];
     my ( $start, $end ) = force_orientation( $l[2], $l[3] );
-    $ACCESSION{$gi_taxonid}{key}          = $gi_taxonid;
-    $ACCESSION{$gi_taxonid}{accession}    = $l[1];
-    $ACCESSION{$gi_taxonid}{start}        = $start;
-    $ACCESSION{$gi_taxonid}{end}          = $end;
-    $ACCESSION{$gi_taxonid}{hsplen}       = $end - $start + 1;
-    $ACCESSION{$gi_taxonid}{is_redundant} = 0;
+    $ACCESSION{$accv_taxonid}{key}          = $accv_taxonid;
+    $ACCESSION{$accv_taxonid}{accession}    = $l[0];
+    $ACCESSION{$accv_taxonid}{taxonid}      = $l[1];
+    $ACCESSION{$accv_taxonid}{start}        = $start;
+    $ACCESSION{$accv_taxonid}{end}          = $end;
+    $ACCESSION{$accv_taxonid}{hsplen}       = $end - $start + 1;
+    $ACCESSION{$accv_taxonid}{is_redundant} = 0;
 }
 print STDERR "\nLoaded accessions from $accessionfile containing $n_accessionfile_lines lines\n\n";
 
@@ -248,7 +250,7 @@ my %RANKS = qw/ kingdom k__ phylum p__ class c__ order o__ family f__ genus g__ 
 
 sub find_taxonid($) {
     my $seq = shift;
-    my ( $ID, @descriptors ) = split /\_/, $seq->display_name;
+    my ( $ID, @descriptors ) = split $re_taxsep, $seq->display_name;
     my $org = join( " ", @descriptors );
     my $taxon_descriptors = $org;
     die "no taxonid found for id '$ID'" if !@descriptors;
@@ -379,7 +381,7 @@ incomplete        : $outfile_incomplete
 redundant         : $outfile_redundant
 excluded          : $outfile_excluded when matching /" . join( "/ /", @regexp_excluded ) . "/
 >$o_min_to_truncate bp truncated : $outfile_truncated
-...then expanded to $o_min_after_truncate if possible
+...then expanded to $o_min_after_truncate bp if possible
 ";
 
 # Go through fasta sequences, find taxonid, calculate hierarchy, add hierarchy info to
@@ -582,3 +584,4 @@ printf STDERR "
 %8d >$o_min_to_truncate bp truncated : $outfile_truncated
 %8d ...then expanded to $o_min_after_truncate bp if possible
 ", $n_seqs, $n_output_seqs, $n_taxonomy, $n_unidentified, $n_incomplete, $n_replaced, $n_redundant, $n_excluded, $n_truncated, $n_expanded_truncated;
+

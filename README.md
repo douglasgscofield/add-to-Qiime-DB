@@ -19,13 +19,7 @@ Blast for GenBank hits
 
 The workflow requires a few steps and is quite simple.  We start with a set of
 ITS sequences to blast, in Fasta format, say in `seqs.fa`.  We will have blast
-results returned in a table format that includes taxonomic information.
-
-**Note**: [NCBI is phasing out the usage of GI
-identifiers](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/).
-If the subject IDs in the blast output tables contain
-`gi|number|gb|accession|`, then specify the `--with-gi` option to the scripts
-below.
+results returned in table format that includes taxonomic information.
 
 ```bash
 blastn -db nt -query seqs.fa -outfmt "6 std staxids sscinames sskingdoms sblastnames" > seqs.bl6
@@ -51,14 +45,21 @@ The `qiime_get_blast_ids_for_genbank.pl` script depends upon the `-outfmt` strin
 for the blast being as you see it above.  The `seqs.ids` file produced by this
 step is used in the two following steps.
 
-Note that the `sort -k1 -u` command removes redundant blast subject sequences
-for which the first column (the merged gi and taxon IDs) are identical.  If the
-`--with-gi` option was specified, the sort command should be `sort -k1,2 -u`.
+The `sort -k1,2 -u` command removes redundant blast subject sequences
+for which the first two columns (accession.version and taxon ID) are identical.
 
-This process works solely on IDs, and there is no provision for choosing the
-most appropriate HSP.  If you feel there might be some issues with the HSP
-chosen as a reference for a particular taxon, first check the filtering of the
-blast results here.
+This process works solely on accessions and IDs, and there is no provision for
+choosing the most appropriate HSP.  If you feel there might be some issues with
+the HSP chosen as a reference for a particular taxon, first check the filtering
+of the blast results here.
+
+**Note**: [NCBI has begun phasing out the usage of GI
+identifiers](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/)
+in favour of versioned accession numbers, and these scripts have been modified
+accordingly.  If the subject IDs in the blast output tables use the older
+format (`gi|number|gb|accession.version|`), this script will print a message to
+STDERR and the versioned accession number will be used as the identifier.
+
 
 Fetch GenBank sequences for the hits
 ------
@@ -66,7 +67,7 @@ Fetch GenBank sequences for the hits
 Now fetch the GenBank sequences corresponding to these hits:
 
 ```bash
-qiime_get_genbank_seqs.pl --gifile seqs.ids > gb_seqs.fa
+qiime_get_genbank_seqs.pl --accessionfile seqs.ids > gb_seqs.fa
 ```
 
 The `qiime_get_genbank_seqs.pl` script began as the BioPerl script
@@ -162,7 +163,7 @@ truncation (shortening around the HSP), and `--min-after-truncate` (default
 up- and downstream of the HSP.  Target truncation shortens the sequence to just
 the region indicated by the start and end positions of the HSP returned by the
 Blast results above, and then expands the site.  This can be very useful for
-producing consistently-sized sequences if the ITS hit is within a large
+producing consistently-sized sequences if the hit is within a large
 (perhaps multi-Mbp) GenBank sequence. 
 
 There are also several other options that might be useful, including a facility
