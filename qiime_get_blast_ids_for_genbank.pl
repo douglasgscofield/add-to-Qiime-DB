@@ -13,6 +13,7 @@ use warnings;
 use Getopt::Long;
 
 my $o_with_gi = 0;
+my $o_help = 0;
 
 sub usage() {
 print STDERR "
@@ -22,6 +23,8 @@ USAGE
 
 If the blast table uses subject IDs containing GIs (prior to Blast 2.5.0+),
 specify the --with-gi option.
+
+Use -h or --help for this usage message.
 
 OUTPUT TO STDOUT
 
@@ -33,8 +36,7 @@ by an underscore, followed by the start and end of the hit in the target.
 With --with-gi, the subject ID is expected to be in the previous NCBI format,
 which contains 'gi|GI-number|gb|accession.version'.  A somewhat different
 format is written to stdout, with the GI number and taxon IDs separated by an
-underscore. Note the version is also stripped off the accession number in this
-case.
+underscore, and the version is stripped off the accession number.
 
     GI-number_taxon-ID <tab> accession <tab> start <tab> end
 
@@ -42,7 +44,7 @@ case.
     exit(1);
 }
 
-GetOptions("with-gi" => \$o_with_gi) and @ARGV or usage();
+GetOptions("with-gi" => \$o_with_gi, "h|help" =>\$o_help) and !$o_help or usage();
 
 while (<>) {
     chomp;

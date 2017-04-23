@@ -80,21 +80,6 @@ modifications can be tracked.
 Create local copy of NCBI taxonomy database
 ------
 
-**NOTE: BioPerl 1.6.924 will remove the index files after creation and this step will not work.**  This is because BioPerl 1.6.924 tries to be helpful by removing taxonomy database index files when it thinks you are done with them, as these are often placed in temporary directories and take up a lot of space.  Unfortunately it also removes them when a different directory is specified with `-directory`, which is not so helpful for us here.  The [BioPerl fix for this][BioPerlfix] is available in the BioPerl source repository, but there has not yet been an official release that contains this fix.  In the meantime, use an earlier version of BioPerl; **BioPerl 1.6.923** works fine.  You can check your version of BioPerl with the following code (also available at the [BioPerl FAQ][BioPerlFAQ]):
-
-```bash
-perl -MBio::Root::Version -e 'print $Bio::Root::Version::VERSION,"\n"'
-```
-
-If it prints `1.006924`, you have 1.6.924 and will have problems with this step.  You can use BioPerl 1.6.924 for other steps here, but not for creating the NCBI taxonomy indices.
-
-----
-
-[BioPerlfix]: https://github.com/douglasgscofield/bioperl-live/commit/fce8b14081869742a37162e3e150d0ec0806794f#diff-32471adf6acfbfca9ff7ffa71d4ae294
-[BioPerlFAQ]: http://www.bioperl.org/wiki/FAQ
-
-
-
 We require a local copy of the NCBI taxonomy database in an `ncbi/` directory
 within your working directory.  This is available from the [NCBI Taxonomy
 Database FTP site][NCBITaxonomy], as file `taxdump.tar.gz`, `taxdump.tar.Z`, or
@@ -115,40 +100,31 @@ cd ..
 After you unpack the database, create an index for it.  By default this is
 created into `ncbi-indices/`.  This will speed up usage of the script
 considerably.  These indices must be recreated each time a new version of the
-NCBI taxonomy database is downloaded.  Note `-force => 1`, this forces an overwrite of any index files that might already exist in the directory.
+NCBI taxonomy database is downloaded.  Note `-force => 1`, this forces an
+overwrite of any index files that might already exist in the directory.
 
 ```bash
 mkdir -p ncbi-indices
 perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force => 1);'
 ```
 
-You might see an error while running this, especially on a Mac:
-
-~~~~
-$ perl -MBio::DB::Taxonomy -e 'Bio::DB::Taxonomy->new(-source=>"flatfile", -nodesfile=>"ncbi/nodes.dmp", -namesfile=>"ncbi/names.dmp", -directory=>"ncbi-indices", -force => 1);'
-HASH: Out of overflow pages.  Increase page size
-perl(3790,0x7fff789a1310) malloc: *** mach_vm_map(size=18446744073704988672) failed (error code=3)
-*** error: can't allocate region
-*** set a breakpoint in malloc_error_break to debug
-~~~~
-
-If you check the `ncbi-indices/` directory, you should still see the indices
-there (sizes will not be exact):
-
-~~~~
-$ ls -l ncbi-indices/
-total 844928
--rw-r--r--  1 Douglas  staff   50885040 Dec  8 13:06 id2names
--rw-r--r--  1 Douglas  staff  296517632 Dec  8 13:06 names2id
--rw-r--r--  1 Douglas  staff   37530524 Dec  8 13:05 nodes
--rw-r--r--  1 Douglas  staff   47665152 Dec  8 13:05 parents
-~~~~
-
-As far as I have been able to tell, the indices are still correct at this point.
-
 If you are keeping the database or indices in directories other than `ncbi/`
 and `ncbi-indices/` then you will need to use the `--db-directory` and/or
 `--db-index-directory` options to the following script.
+
+**NOTE:** A bug in BioPerl 1.6.924 results in the deletion of NCBI taxonomy
+index files after they are created.  Use an earlier or later version of BioPerl
+to create indices.  Via the [BioPerl FAQ][BioPerlFAQ], the BioPerl version can
+be checked with:
+
+```bash
+perl -MBio::Root::Version -e 'print $Bio::Root::Version::VERSION,"\n"'
+```
+
+At [UPPMAX][UPPMAX], the `BioPerl/1.6.924_Perl5.18.4` module includes a fix for this bug.
+
+[BioPerlFAQ]: http://www.bioperl.org/wiki/FAQ
+[UPPMAX]:     https://www.uppmax.uu.se
 
 
 Assemble taxonomic hierarchies for GenBank hits
