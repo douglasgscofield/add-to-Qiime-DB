@@ -30,6 +30,12 @@ columns are useful for checking the taxonomic content of results.  If multiple
 cores are available, using `-num_threads` could speed up this step
 considerably.
 
+**NOTE** It is possible that using the `std` keyword will get a non-versioned
+ID output for each blast hit.  If this is the case, then change the `-outfmt`
+option to explicitly include the required columns:
+
+    ... -outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore staxids sscinames sskingdoms sblastnames" ...
+
 
 Extract hit information from Blast results
 ------
@@ -182,6 +188,24 @@ copy of that script so modifications can be tracked.
 
 [taxonomy.pl]: https://github.com/hyphaltip/mobedac-fungi/blob/master/scripts/taxonomy.pl
 [MOBeDAC]: https://github.com/hyphaltip/mobedac-fungi
+
+
+Assemble taxonomic hierarchies without sequences
+------
+
+If you wish to assemble taxonomic hierarchies without the accompanying
+sequences, say for further downstream processing of the taxonomies, there is a
+separate script for this:
+
+```bash
+qiime_get_taxonomy_from_ids.pl --accession-file seqs.ids
+```
+
+The script is similar to `qiime_get_taxonomy_from_seqs.pl`, but defaults are a
+little different.  There is no default `--excluded` pattern, and apparently
+redundant taxonomies are kept, though their potential redundancy is still
+assessed.
+
 
 
 Output files
