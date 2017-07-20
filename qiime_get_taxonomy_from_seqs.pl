@@ -72,18 +72,22 @@ sub usage {
     print STDERR "
 $0: Process blast results and GenBank sequences to produce Qiime-compatible taxonomy and sequence files.
 See https://github.com/douglasgscofield/add-to-Qiime-DB for more information.
+
 USAGE:
     $0 [ options ] --accession-file FILE FILE.fa
+
 The FILE given to the --accession-file option may have any name, but must be
 produced by the companion script qiime_get_blast_ids_for_genbank.pl.
 'FILE.fa' may have any name, but must be a Fasta-format file produced by the
 companion script qiime_get_genbank_seqs.pl.
-The NCBI taxonomy DB must be downloaded prior to running this script; see the
-Github repository for further information.  For best performance an index should
-be generated for it ahead of time, see the Github repository for the procedure.
+
+The NCBI taxonomy DB must be downloaded prior to running this script, and an
+index should be generated; see the Github repository for further information.
 Locations of the DB and its indices are specified with the --db-directory and
---db-index-directory options.
+--db-index-directory options, if necessary.
+
 Command-line options:
+
   --db-directory DIR         Directory for NCBI taxonomy DB  [$o_db_directory]
   --db-index-directory DIR   Directory for NCBI taxonomy DB indices  [$o_db_index_directory]
   --accession-file FILE      *REQUIRED* File containing blast result columns after 
@@ -158,15 +162,14 @@ GetOptions(
     'verbose|debug!'       => \$debug,
     'help|?'               => \$o_help,
 );
+
 usage() if $o_help;
-usage("must provide --accession-file and one file of sequences")
-  if not $accessionfile or @ARGV != 1;
+usage("must provide --accession-file and one file of sequences") if not $accessionfile or @ARGV != 1;
 usage("must use --idformat to supply an ID format to use")    if not $idformat;
 usage("only one of --first and --retry may be specified")     if $o_first and $o_retry;
 usage("--id1 must be greater than or equal to 0")             if $id1 < 0;
 usage("--min-to-truncate must be greater than or equal to 0") if $o_min_to_truncate < 0;
-usage("--min-after-truncate must be less than or equal to --min-to-truncate")
-  if $o_min_after_truncate > $o_min_to_truncate;
+usage("--min-after-truncate must be less than or equal to --min-to-truncate") if $o_min_after_truncate > $o_min_to_truncate;
 
 # Read accession file containing info in HSPs of blast hits
 

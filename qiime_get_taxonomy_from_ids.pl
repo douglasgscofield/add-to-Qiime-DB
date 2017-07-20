@@ -4,11 +4,18 @@
 #
 #     https://github.com/douglasgscofield/add-to-Qiime-DB
 #
-# Douglas G. Scofield
-# Evolutionary Biology Centre, Uppsala University
-# douglas.scofield@ebc.uu.se
+# Use this file to generate taxonomies using just an accession file as created
+# by the companion script qiime_get_blast_ids_for_genbank.pl.  Adding to a
+# Qiime database also requires representative sequences, but this script could
+# be useful if you would like to determining taxonomies for given sequences.
 #
-# Heavily modified from Steven Ahrendt's original script found at:
+#
+# Douglas G. Scofield Evolutionary Biology Centre, Uppsala University
+# douglas.scofield@ebc.uu.se
+
+# Heavily modified from qiime_get_taxonomy_from_seqs.pl in this same
+# repository, which was itself modified from Steven Ahrendt's original script
+# found at:
 #
 #      https://github.com/hyphaltip/mobedac-fungi/blob/master/scripts/taxonomy.pl
 #
@@ -21,10 +28,7 @@
 ##        sahre001@ucr.edu
 ## Date: 8.30.11
 ##       v.1.0  :
-#
-# I've made many modifications to the original script, with the goal of
-# adapting the input and output streams for use in producing Qiime-compatible
-# output.
+
 
 use strict;
 use warnings;
@@ -66,6 +70,7 @@ my $o_help = 0;
 sub usage {
     print STDERR "\n*** Error: @_ \n" if @_;
     print STDERR "
+
 $0: Process blast results and GenBank sequences to produce Qiime-compatible taxonomy and sequence files.
 See https://github.com/douglasgscofield/add-to-Qiime-DB for more information.
 
@@ -75,12 +80,13 @@ USAGE:
 The FILE given to the --accession-file option may have any name, but must be
 produced by the companion script qiime_get_blast_ids_for_genbank.pl.
 
-The NCBI taxonomy DB must be downloaded prior to running this script; see the
-Github repository for further information.  For best performance an index should
-be generated for it ahead of time, see the Github repository for the procedure.
+The NCBI taxonomy DB must be downloaded prior to running this script, and an
+index should be generated; see the Github repository for further information.
 Locations of the DB and its indices are specified with the --db-directory and
---db-index-directory options.
+--db-index-directory options, if necessary.
+
 Command-line options:
+
   --db-directory DIR         Directory for NCBI taxonomy DB  [$o_db_directory]
   --db-index-directory DIR   Directory for NCBI taxonomy DB indices  [$o_db_index_directory]
   --accession-file FILE      *REQUIRED* File containing blast result columns after 
@@ -138,9 +144,9 @@ GetOptions(
     'verbose|debug!'       => \$debug,
     'help|?'               => \$o_help,
 );
+
 usage() if $o_help;
-usage("must provide --accession-file only")
-  if not $accessionfile or @ARGV != 0;
+usage("must provide --accession-file only") if not $accessionfile or @ARGV != 0;
 usage("only one of --first and --retry may be specified")     if $o_first and $o_retry;
 
 my %ACCESSION;
